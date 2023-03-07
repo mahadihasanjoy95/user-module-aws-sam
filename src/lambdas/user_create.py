@@ -9,6 +9,9 @@ client = boto3.client('cognito-idp')
 
 UserPool = os.getenv('UserPool')
 
+DynamoTableName = os.getenv('DynamoTableName')
+RegionName = os.getenv('RegionName')
+
 
 def lambda_handler(message, context):
     if ('body' not in message or
@@ -18,8 +21,8 @@ def lambda_handler(message, context):
             'headers': {},
             'body': json.dumps({'msg': 'Bad Request'})
         }
-    table_name = os.environ.get('TABLE', 'pwsp_revenue_system')
-    region = os.environ.get('REGION', 'ap-northeast-1')
+    table_name = DynamoTableName
+    region = RegionName
     item_table = boto3.resource(
         'dynamodb',
         region_name=region

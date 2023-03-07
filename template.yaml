@@ -16,6 +16,8 @@ Globals:
         STAGE: !Ref Stage
         UserPool: !Ref UserPool
         UserPoolClient: !Ref UserPoolClient
+        DynamoTableName: !Ref TableName
+        RegionName: !Ref Region
   Api:
     TracingEnabled: true
 Parameters:
@@ -25,6 +27,14 @@ Parameters:
     Type: String
     Description: 'Name of the project'
     Default: 'user-module'
+  TableName:
+    Type: String
+    Description: 'Name of the dynamo Table as it is single table design model'
+    Default: 'pwsp_revenue_system'
+  Region:
+    Type: String
+    Description: 'Name of the aws region'
+    Default: 'ap-northeast-1'
 
 Resources:
   # Lambdas
@@ -153,7 +163,7 @@ Resources:
   DynamoTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: pwsp_revenue_system
+      TableName: !Sub ${TableName}
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: "PK"

@@ -6,6 +6,8 @@ import boto3
 client = boto3.client('cognito-idp')
 
 UserPool = os.getenv('UserPool')
+DynamoTableName = os.getenv('DynamoTableName')
+RegionName = os.getenv('RegionName')
 
 
 def lambda_handler(message, context):
@@ -23,8 +25,9 @@ def lambda_handler(message, context):
     """
     TODO: This database part should be optimized & have to Check that role exists in DB or not
     """
-    table_name = os.environ.get('TABLE', 'pwsp_revenue_system')
-    region = os.environ.get('REGION', 'ap-northeast-1')
+    table_name = DynamoTableName
+    # region = os.environ.get('REGION', 'ap-northeast-1')
+    region = RegionName
     item_table = boto3.resource(
         'dynamodb',
         region_name=region

@@ -12,8 +12,10 @@ dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table('pwsp_revenue_system')
 UserPoolClient = os.getenv('UserPoolClient')
 UserPool = os.getenv('UserPool')
+DynamoTableName = os.getenv('DynamoTableName')
+RegionName = os.getenv('RegionName')
 
-region = 'ap-northeast-1'
+region = RegionName
 keys_url = 'https://cognito-idp.{}.amazonaws.com/{}/.well-known/jwks.json'.format(region, UserPool)
 
 with urllib.request.urlopen(keys_url) as f:

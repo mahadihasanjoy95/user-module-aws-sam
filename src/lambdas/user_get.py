@@ -3,6 +3,9 @@ import os
 import json
 from boto3.dynamodb.conditions import Key
 
+DynamoTableName = os.getenv('DynamoTableName')
+RegionName = os.getenv('RegionName')
+
 
 def lambda_handler(message, context):
     if ('httpMethod' not in message or
@@ -13,8 +16,8 @@ def lambda_handler(message, context):
             'body': json.dumps({'msg': 'Bad Request'})
         }
 
-    table_name = os.environ.get('TABLE', 'pwsp_revenue_system')
-    region = os.environ.get('REGION', 'ap-northeast-1')
+    table_name = DynamoTableName
+    region = RegionName
 
     item_table = boto3.resource(
         'dynamodb',
@@ -26,8 +29,8 @@ def lambda_handler(message, context):
     Query to get all the users from the table
     """
     response = table.query(
-            KeyConditionExpression=Key('PK').eq('USER#')
-        )
+        KeyConditionExpression=Key('PK').eq('USER#')
+    )
 
     return {
         "statusCode": 200,
