@@ -1,0 +1,180 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  user-module
+
+  Sample SAM Template for user-module
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 3
+    MemorySize: 128
+    Tracing: Active
+    Environment:
+      Variables:
+        STAGE: !Ref Stage
+        UserPool: !Ref UserPool
+        UserPoolClient: !Ref UserPoolClient
+  Api:
+    TracingEnabled: true
+Parameters:
+  Stage:
+    Type: String
+  ProjectName:
+    Type: String
+    Description: 'Name of the project'
+    Default: 'user-module'
+
+Resources:
+  # Lambdas
+  RoleCreate:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/lambdas
+      Handler: role_create.lambda_handler
+      Runtime: python3.9
+      Events:
+        RoleCreate:
+          Type: Api
+          Properties:
+            Path: /role/create
+            RestApiId: !Ref MyCustomApi
+            Method: post
+            Auth:
+              Authorizer: NONE
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref DynamoTable
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - "cognito-idp:CreateGroup"
+              Resource: '*'
+  CreateUser:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/lambdas
+      Handler: user_create.lambda_handler
+      Runtime: python3.9
+      Events:
+        CreateUser:
+          Type: Api
+          Properties:
+            Path: /user/create
+            RestApiId: !Ref MyCustomApi
+            Method: post
+            Auth:
+              Authorizer: NONE
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref DynamoTable
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - "cognito-idp:AdminCreateUser"
+                - "cognito-idp:AdminSetUserPassword"
+                - "cognito-idp:AdminAddUserToGroup"
+
+              Resource: '*'
+  LoginUserFunc:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/lambdas/
+      Handler: user_login.lambda_handler
+      Runtime: python3.9
+      Events:
+        LoginUser:
+          Type: Api
+          Properties:
+            Path: /user/login
+            RestApiId: !Ref MyCustomApi
+            Method: post
+            Auth:
+              Authorizer: NONE
+  GetUserFunc:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/lambdas/
+      Handler: user_get.lambda_handler
+      Runtime: python3.9
+      Events:
+        GetUsers:
+          Type: Api
+          Properties:
+            Path: /user/get
+            RestApiId: !Ref MyCustomApi
+            Method: get
+
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref DynamoTable
+  #CustomAuthorizer Method
+  CustomAuthorizerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/lambdas
+      Handler: user_authorization.lambda_handler
+      Runtime: python3.9
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref DynamoTable
+  #Userpool
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub ${Stage}-UserPool
+      EmailConfiguration:
+        EmailSendingAccount: DEVELOPER
+        From: "Water Development< niloy369@gmail.com >"
+        SourceArn: "arn:aws:ses:us-west-2:534678543881:identity/niloy369@gmail.com"
+  #UserPoolClient
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref UserPool
+      ClientName: !Sub ${Stage}-UserPoolClient
+      ExplicitAuthFlows:
+        - USER_PASSWORD_AUTH
+
+  #Custom API with Custom Authorizer
+  MyCustomApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: dev
+      Auth:
+        DefaultAuthorizer: MyLambdaTokenAuthorizer
+        Authorizers:
+          MyLambdaTokenAuthorizer:
+            FunctionArn: !GetAtt CustomAuthorizerFunction.Arn
+  #Database Configuration
+  DynamoTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: pwsp_revenue_system
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: "PK"
+          AttributeType: "S"
+        - AttributeName: "SK"
+          AttributeType: "S"
+        - AttributeName: "GSI1PK"
+          AttributeType: "S"
+        - AttributeName: "GSI1SK"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "PK"
+          KeyType: "HASH"
+        - AttributeName: "SK"
+          KeyType: "RANGE"
+      GlobalSecondaryIndexes:
+        - IndexName: Index1
+          KeySchema:
+            - AttributeName: "GSI1PK"
+              KeyType: "HASH"
+            - AttributeName: "GSI1SK"
+              KeyType: "RANGE"
+          Projection:
+            ProjectionType: ALL
