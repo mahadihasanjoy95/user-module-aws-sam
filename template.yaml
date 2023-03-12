@@ -35,7 +35,16 @@ Parameters:
     Type: String
     Description: 'Name of the aws region'
     Default: 'ap-northeast-1'
-
+  Tag:
+    Type: "String"
+    Default: aws-aurora-vpc
+  KmsKeyId:
+    Description: KMS Key ID to use for encrypting secrets
+    Type: String
+    Default: 76469d22-c205-4275-b7dd-33cad075b0ce
+  DbName:
+    Type: String
+    Default: usermodule
 Resources:
   # Lambdas
   RoleCreate:
@@ -121,6 +130,51 @@ Resources:
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref DynamoTable
+  ApiCreate:
+    Type: AWS::Serverless::Function
+    Properties:
+      Environment:
+        Variables:
+          DbName: !Ref DbName
+          DbCluster: !GetAtt RDSCluster.DBClusterArn
+          DbSecret: !Ref 'DBSecret'
+      CodeUri: src/lambdas/
+      Handler: api_create.lambda_handler
+      Runtime: python3.9
+      Events:
+        ApiCreate:
+          Type: Api
+          Properties:
+            Path: /api/create
+            RestApiId: !Ref MyCustomApi
+            Method: post
+  ModuleCreate:
+    Type: AWS::Serverless::Function
+    Properties:
+      Environment:
+        Variables:
+          DbName: !Ref DbName
+          DbCluster: !GetAtt RDSCluster.DBClusterArn
+          DbSecret: !Ref 'DBSecret'
+      CodeUri: src/lambdas/
+      Handler: module_create.lambda_handler
+      Runtime: python3.9
+      Events:
+        ModuleCreate:
+          Type: Api
+          Properties:
+            Path: /module/create
+            RestApiId: !Ref MyCustomApi
+            Method: post
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - "rds-data:ExecuteStatement"
+                - "secretsmanager:GetSecretValue"
+              Resource: '*'
+
   #CustomAuthorizer Method
   CustomAuthorizerFunction:
     Type: AWS::Serverless::Function
@@ -159,7 +213,7 @@ Resources:
         Authorizers:
           MyLambdaTokenAuthorizer:
             FunctionArn: !GetAtt CustomAuthorizerFunction.Arn
-  #Database Configuration
+  #Database Configuration (DynamoDB)
   DynamoTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -188,3 +242,102 @@ Resources:
               KeyType: "RANGE"
           Projection:
             ProjectionType: ALL
+
+  VPC:
+    Type: "AWS::EC2::VPC"
+    Properties:
+      CidrBlock: "10.0.0.0/16"
+      Tags:
+      - Key: "Name"
+        Value: !Ref "Tag"
+  SubnetA:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Select
+        - 0
+        - !GetAZs
+          Ref: 'AWS::Region'
+      VpcId: !Ref "VPC"
+      CidrBlock: "10.0.0.0/24"
+
+  SubnetB:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Select
+        - 1
+        - !GetAZs
+          Ref: 'AWS::Region'
+      VpcId: !Ref "VPC"
+      CidrBlock: "10.0.1.0/24"
+
+  RouteTable:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref "VPC"
+
+  SubnetGroup:
+    Type: "AWS::RDS::DBSubnetGroup"
+    Properties:
+      DBSubnetGroupName: "subnetgroup"
+      DBSubnetGroupDescription: "Subnet Group"
+      SubnetIds:
+        - !Ref "SubnetA"
+        - !Ref "SubnetB"
+
+  InstanceSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupName: "Example Security Group"
+      GroupDescription: "RDS traffic"
+      VpcId: !Ref "VPC"
+      SecurityGroupEgress:
+      - IpProtocol: "-1"
+        CidrIp: "0.0.0.0/0"
+
+  InstanceSecurityGroupIngress:
+    Type: "AWS::EC2::SecurityGroupIngress"
+    DependsOn: "InstanceSecurityGroup"
+    Properties:
+      GroupId: !Ref "InstanceSecurityGroup"
+      IpProtocol: "tcp"
+      FromPort: "0"
+      ToPort: "65535"
+      SourceSecurityGroupId: !Ref "InstanceSecurityGroup"
+
+  RDSCluster:
+    Type: "AWS::RDS::DBCluster"
+    Properties:
+      EnableHttpEndpoint: true
+      DBSubnetGroupName: !Ref "SubnetGroup"
+      MasterUsername: !Join [ '', [ '{{resolve:secretsmanager:', !Ref DBSecret, ':SecretString:username}}' ] ]
+      MasterUserPassword: !Join [ '', [ '{{resolve:secretsmanager:', !Ref DBSecret, ':SecretString:password}}' ] ]
+      DatabaseName: "usermodule"
+      Engine: "aurora"
+      EngineMode: "serverless"
+      VpcSecurityGroupIds:
+      - !Ref "InstanceSecurityGroup"
+      ScalingConfiguration:
+        AutoPause: true
+        MaxCapacity: 16
+        MinCapacity: 2
+        SecondsUntilAutoPause: 300
+  DBSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: Username and password for database
+      GenerateSecretString:
+        GenerateStringKey: "password"
+        PasswordLength: 20
+        SecretStringTemplate: '{"username": "mahadi"}'
+        ExcludePunctuation: True
+      Tags:
+        - Key: Name
+          Value: db-secret
+      Name: DBSecret
+
+  DBSecretAttachment:
+    Type: AWS::SecretsManager::SecretTargetAttachment
+    Properties:
+      SecretId: !Ref DBSecret
+      TargetId: !Ref RDSCluster
+      TargetType: AWS::RDS::DBCluster

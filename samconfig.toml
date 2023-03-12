@@ -9,5 +9,5 @@ region = "ap-northeast-1"
 confirm_changeset = true
 capabilities = "CAPABILITY_IAM"
 disable_rollback = true
-parameter_overrides = "Stage=\"dev\" ProjectName=\"user-module\""
+parameter_overrides = "Stage=\"dev\" ProjectName=\"user-module\" TableName=\"pwsp_revenue_system\" Region=\"ap-northeast-1\" Tag=\"aws-aurora-vpc\" KmsKeyId=\"76469d22-c205-4275-b7dd-33cad075b0ce\" DbName=\"usermodule\""
 image_repositories = []
