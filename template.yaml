@@ -50,6 +50,11 @@ Resources:
   RoleCreate:
     Type: AWS::Serverless::Function
     Properties:
+      Environment:
+        Variables:
+          DbName: !Ref DbName
+          DbCluster: !GetAtt RDSCluster.DBClusterArn
+          DbSecret: !Ref 'DBSecret'
       CodeUri: src/lambdas
       Handler: role_create.lambda_handler
       Runtime: python3.9
@@ -70,10 +75,17 @@ Resources:
             - Effect: Allow
               Action:
                 - "cognito-idp:CreateGroup"
+                - "rds-data:ExecuteStatement"
+                - "secretsmanager:GetSecretValue"
               Resource: '*'
   CreateUser:
     Type: AWS::Serverless::Function
     Properties:
+      Environment:
+        Variables:
+          DbName: !Ref DbName
+          DbCluster: !GetAtt RDSCluster.DBClusterArn
+          DbSecret: !Ref 'DBSecret'
       CodeUri: src/lambdas
       Handler: user_create.lambda_handler
       Runtime: python3.9
@@ -96,7 +108,8 @@ Resources:
                 - "cognito-idp:AdminCreateUser"
                 - "cognito-idp:AdminSetUserPassword"
                 - "cognito-idp:AdminAddUserToGroup"
-
+                - "rds-data:ExecuteStatement"
+                - "secretsmanager:GetSecretValue"
               Resource: '*'
   LoginUserFunc:
     Type: AWS::Serverless::Function
@@ -148,6 +161,14 @@ Resources:
             Path: /api/create
             RestApiId: !Ref MyCustomApi
             Method: post
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - "rds-data:ExecuteStatement"
+                - "secretsmanager:GetSecretValue"
+              Resource: '*'
   ModuleCreate:
     Type: AWS::Serverless::Function
     Properties:
@@ -164,6 +185,85 @@ Resources:
           Type: Api
           Properties:
             Path: /module/create
+            RestApiId: !Ref MyCustomApi
+            Method: post
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - "rds-data:ExecuteStatement"
+                - "secretsmanager:GetSecretValue"
+              Resource: '*'
+  FeatureCreate:
+    Type: AWS::Serverless::Function
+    Properties:
+      Environment:
+        Variables:
+          DbName: !Ref DbName
+          DbCluster: !GetAtt RDSCluster.DBClusterArn
+          DbSecret: !Ref 'DBSecret'
+      CodeUri: src/lambdas/
+      Handler: feature_create.lambda_handler
+      Runtime: python3.9
+      Events:
+        FeatureCreate:
+          Type: Api
+          Properties:
+            Path: /feature/create
+            RestApiId: !Ref MyCustomApi
+            Method: post
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - "rds-data:ExecuteStatement"
+                - "secretsmanager:GetSecretValue"
+              Resource: '*'
+  RoleAssign:
+    Type: AWS::Serverless::Function
+    Properties:
+      Environment:
+        Variables:
+          DbName: !Ref DbName
+          DbCluster: !GetAtt RDSCluster.DBClusterArn
+          DbSecret: !Ref 'DBSecret'
+      CodeUri: src/lambdas/
+      Handler: role_assign.lambda_handler
+      Runtime: python3.9
+      Events:
+        RoleAssign:
+          Type: Api
+          Properties:
+            Path: /role/assign
+            RestApiId: !Ref MyCustomApi
+            Method: post
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - "rds-data:ExecuteStatement"
+                - "secretsmanager:GetSecretValue"
+                - "cognito-idp:AdminAddUserToGroup"
+              Resource: '*'
+  ApiAssign:
+    Type: AWS::Serverless::Function
+    Properties:
+      Environment:
+        Variables:
+          DbName: !Ref DbName
+          DbCluster: !GetAtt RDSCluster.DBClusterArn
+          DbSecret: !Ref 'DBSecret'
+      CodeUri: src/lambdas/
+      Handler: api_assign.lambda_handler
+      Runtime: python3.9
+      Events:
+        ApiAssign:
+          Type: Api
+          Properties:
+            Path: /api/assign
             RestApiId: !Ref MyCustomApi
             Method: post
       Policies:

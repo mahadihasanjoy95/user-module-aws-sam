@@ -46,7 +46,7 @@ def lambda_handler(event, context):
 
                 }
     except Exception as e:
-        print("Exception to create module table::::::::::  ", e)
+        print("Exception to insert in module table::::::::::  ", e)
         return {"statusCode": 400,
                 'body': json.dumps({"message": "Can't insert the data!!!!!!!!"}),
                 # "location": ip.text.replace("\n", "")

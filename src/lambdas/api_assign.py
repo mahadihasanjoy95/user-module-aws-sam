@@ -14,7 +14,7 @@ database_name = "usermodule"
 
 
 def lambda_handler(event, context):
-    createSql = "CREATE TABLE  IF NOT EXISTS api ( id int NOT NULL, apiName varchar(255) NOT NULL, apiUrl varchar(255) NOT NULL, featureId int NOT NULL, PRIMARY KEY (id), FOREIGN KEY (featureId) REFERENCES feature(id));"
+    createSql = "CREATE TABLE  IF NOT EXISTS role_api ( roleId int NOT NULL, apiId int NOT NULL, PRIMARY KEY (roleId,apiId), FOREIGN KEY (roleId) REFERENCES role(id), FOREIGN KEY (apiId) REFERENCES api(id));"
     try:
         response = rds_client.execute_statement(
             secretArn=db_credentials_secrets_arn,
@@ -24,16 +24,14 @@ def lambda_handler(event, context):
         )
         print("RESPONSE::::::::::::::::: ", response)
     except Exception as e:
-        print("Exception to create api table::::::::::  ", e)
+        print("Exception to create role_api table::::::::::  ", e)
     payload = json.loads(event['body'])
 
     # Extract values from the payload
-    apiName = payload['apiName']
-    apiUrl = payload['apiUrl']
-    featureId = payload['featureId']
-    randomId = randint(1, 1000)
+    apiId = payload['apiId']
+    roleId = payload['roleId']
 
-    insertSql = f"INSERT INTO api (id,apiName, apiUrl, featureId) VALUES ({randomId},'{apiName}', '{apiUrl}',{featureId})"
+    insertSql = f"INSERT INTO role_api (roleId,apiId) VALUES ({roleId},{apiId})"
     # response = {"records": {}}
     try:
         rds_client.execute_statement(
@@ -48,7 +46,7 @@ def lambda_handler(event, context):
 
                 }
     except Exception as e:
-        print("Exception to insert in api table::::::::::  ", e)
+        print("Exception to insert in role_api table::::::::::  ", e)
         return {"statusCode": 400,
                 'body': json.dumps({"message": "Can't insert the data!!!!!!!!"}),
                 # "location": ip.text.replace("\n", "")
