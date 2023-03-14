@@ -239,6 +239,8 @@ Resources:
             Path: /role/assign
             RestApiId: !Ref MyCustomApi
             Method: post
+            Auth:
+              Authorizer: NONE
       Policies:
         - Version: '2012-10-17'
           Statement:
@@ -266,6 +268,8 @@ Resources:
             Path: /api/assign
             RestApiId: !Ref MyCustomApi
             Method: post
+            Auth:
+              Authorizer: NONE
       Policies:
         - Version: '2012-10-17'
           Statement:
@@ -279,12 +283,24 @@ Resources:
   CustomAuthorizerFunction:
     Type: AWS::Serverless::Function
     Properties:
+      Environment:
+        Variables:
+          DbName: !Ref DbName
+          DbCluster: !GetAtt RDSCluster.DBClusterArn
+          DbSecret: !Ref 'DBSecret'
       CodeUri: src/lambdas
       Handler: user_authorization.lambda_handler
       Runtime: python3.9
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref DynamoTable
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - "rds-data:ExecuteStatement"
+                - "secretsmanager:GetSecretValue"
+              Resource: '*'
   #Userpool
   UserPool:
     Type: AWS::Cognito::UserPool

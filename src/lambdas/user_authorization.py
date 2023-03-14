@@ -22,6 +22,13 @@ with urllib.request.urlopen(keys_url) as f:
     response = f.read()
 keys = json.loads(response.decode('utf-8'))['keys']
 
+rds_client = boto3.client('rds-data')
+db_cluster_arn = os.getenv('DbCluster')
+print("DBCLUSTER::::::::::: ", db_cluster_arn)
+db_credentials_secrets_arn = os.getenv('DbSecret')
+print("DB SECRET::::::::::: ", db_credentials_secrets_arn)
+
+database_name = "usermodule"
 
 def auth_token_decode(token, api):
     """
@@ -62,14 +69,49 @@ def auth_token_decode(token, api):
             print('Token was not issued for this audience')
             return False
         # TODO: This section will be enabled after adding role and permission from DB layer
-        # return check_role_permission(claims["cognito:groups"][0], api)
-        return True
+        # return check_role_permission_dynamoDb(claims["cognito:groups"][0], api)
+        return check_role_permission_rds(claims["cognito:groups"][0], api)
+        # return True
     except Exception as e:
         print("NEW EXCEPTION:::::::::::::::::::: ", e)
         return False
 
+def check_role_permission_rds(role, api):
+    """
+    Check the api has the role wise permission from RDS here
+    """
+    try:
+        # Split the method ARN to retrieve the API path
+        arn_parts = api.split('/')
+        api_path = '/' + '/'.join(arn_parts[3:])
 
-def check_role_permission(role, api):
+        # Log the extracted API path
+        print(f"API path::::::::::::::::::: {api_path}")
+
+        # Check that this role and path exists in role_api table or not
+        # Check if the row exists
+        sql_query = f'SELECT 1 FROM role_api WHERE roleName = \'{role}\' AND apiUrl = \'{api_path}\''
+        response = rds_client.execute_statement(
+            secretArn=db_credentials_secrets_arn,
+            database=database_name,
+            resourceArn=db_cluster_arn,
+            sql=sql_query
+        )
+        print("DB RESPONSE:::::::: ", response['records'])
+        # If the SELECT query returns any rows, then the row exists
+        row_exists = len(response['records']) > 0
+
+        # Return a response indicating whether the row exists or not
+        if row_exists:
+            return True
+        else:
+            return False
+    except Exception as e:
+        print("Exception from the RDS::::::::::  ", e)
+        return False
+
+
+def check_role_permission_dynamoDb(role, api):
     """
     Check the api has the role wise permission from DynamoDB here
     """

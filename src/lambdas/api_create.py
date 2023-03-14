@@ -14,7 +14,7 @@ database_name = "usermodule"
 
 
 def lambda_handler(event, context):
-    createSql = "CREATE TABLE  IF NOT EXISTS api ( id int NOT NULL, apiName varchar(255) NOT NULL, apiUrl varchar(255) NOT NULL, featureId int NOT NULL, PRIMARY KEY (id), FOREIGN KEY (featureId) REFERENCES feature(id));"
+    createSql = "CREATE TABLE  IF NOT EXISTS api (apiName varchar(255) NOT NULL, apiUrl varchar(255) NOT NULL, featureId int NOT NULL, PRIMARY KEY (apiUrl), FOREIGN KEY (featureId) REFERENCES feature(id));"
     try:
         response = rds_client.execute_statement(
             secretArn=db_credentials_secrets_arn,
@@ -33,7 +33,7 @@ def lambda_handler(event, context):
     featureId = payload['featureId']
     randomId = randint(1, 1000)
 
-    insertSql = f"INSERT INTO api (id,apiName, apiUrl, featureId) VALUES ({randomId},'{apiName}', '{apiUrl}',{featureId})"
+    insertSql = f"INSERT INTO api (apiName, apiUrl, featureId) VALUES ('{apiName}', '{apiUrl}',{featureId})"
     # response = {"records": {}}
     try:
         rds_client.execute_statement(

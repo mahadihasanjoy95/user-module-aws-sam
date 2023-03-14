@@ -66,12 +66,12 @@ db_cluster_arn = os.getenv('DbCluster')
 print("DBCLUSTER::::::::::: ", db_cluster_arn)
 db_credentials_secrets_arn = os.getenv('DbSecret')
 print("DB SECRET::::::::::: ", db_credentials_secrets_arn)
-
+UserPool = os.getenv('UserPool')
 database_name = "usermodule"
 
-
+client = boto3.client('cognito-idp')
 def lambda_handler(event, context):
-    createSql = "CREATE TABLE  IF NOT EXISTS role ( id int NOT NULL, roleName varchar(255) NOT NULL, roleDescription varchar(255) NOT NULL, PRIMARY KEY (id));"
+    createSql = "CREATE TABLE  IF NOT EXISTS role (roleName varchar(255) NOT NULL, roleDescription varchar(255) NOT NULL, PRIMARY KEY (roleName));"
     try:
         response = rds_client.execute_statement(
             secretArn=db_credentials_secrets_arn,
@@ -87,9 +87,8 @@ def lambda_handler(event, context):
     # Extract values from the payload
     roleName = payload['roleName']
     roleDescription = payload['roleDescription']
-    randomId = randint(1, 1000)
 
-    insertSql = f"INSERT INTO role (id,roleName, roleDescription) VALUES ({randomId},'{roleName}', '{roleDescription}')"
+    insertSql = f"INSERT INTO role (roleName, roleDescription) VALUES ('{roleName}', '{roleDescription}')"
     # response = {"records": {}}
     try:
         rds_client.execute_statement(
@@ -98,11 +97,17 @@ def lambda_handler(event, context):
             resourceArn=db_cluster_arn,
             sql=insertSql
         )
+        """
+        #     Create group into user-pool. Here group is actually define the role
+        #     """
+        reply = client.create_group(UserPoolId=UserPool, GroupName=roleName)
+
         return {"statusCode": 200,
                 'body': json.dumps({"message": "Successfully Inserted"}),
                 # "location": ip.text.replace("\n", "")
 
                 }
+
     except Exception as e:
         print("Exception to insert in role table::::::::::  ", e)
         return {"statusCode": 400,

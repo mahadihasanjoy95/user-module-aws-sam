@@ -15,7 +15,7 @@ UserPool = os.getenv('UserPool')
 
 
 def lambda_handler(event, context):
-    createSql = "CREATE TABLE  IF NOT EXISTS user_role ( userId int NOT NULL, roleId int NOT NULL, PRIMARY KEY (userId,roleId), FOREIGN KEY (userId) REFERENCES user(id), FOREIGN KEY (roleId) REFERENCES role(id));"
+    createSql = "CREATE TABLE  IF NOT EXISTS user_role ( userId int NOT NULL, roleName varchar(255) NOT NULL, PRIMARY KEY (userId,roleName), FOREIGN KEY (userId) REFERENCES user(id), FOREIGN KEY (roleName) REFERENCES role(roleName));"
     try:
         response = rds_client.execute_statement(
             secretArn=db_credentials_secrets_arn,
@@ -30,7 +30,7 @@ def lambda_handler(event, context):
 
     # Extract values from the payload
     userId = payload['userId']
-    roleId = payload['roleId']
+    role_name = payload['roleName']
 
     """
     Fetch user email from USER table PART 
@@ -52,27 +52,7 @@ def lambda_handler(event, context):
         user_email = row[0]['stringValue']
     print("USER EMAIL::::::::::::::: ", user_email)
 
-    """
-        Fetch role name from role table PART 
-        """
-    parametersForRole = [{'name': 'id', 'value': {'longValue': int(roleId)}}]
-
-    sqlForFetchEmail = "SELECT roleName FROM role WHERE id = :id"
-    response = rds_client.execute_statement(
-        resourceArn=db_cluster_arn,
-        secretArn=db_credentials_secrets_arn,
-        database=database_name,
-        sql=sqlForFetchEmail,
-        parameters=parametersForRole
-    )
-
-    # parse user email from response
-    role_name = None
-    for row in response['records']:
-        role_name = row[0]['stringValue']
-    print("Role Name::::::::::::::: ", role_name)
-
-    insertSql = f"INSERT INTO user_role (userId,roleId) VALUES ({userId},{roleId})"
+    insertSql = f"INSERT INTO user_role (userId,roleName) VALUES ({userId},'{role_name}')"
     # response = {"records": {}}
     try:
         rds_client.execute_statement(

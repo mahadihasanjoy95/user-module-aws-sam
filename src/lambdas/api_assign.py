@@ -14,7 +14,7 @@ database_name = "usermodule"
 
 
 def lambda_handler(event, context):
-    createSql = "CREATE TABLE  IF NOT EXISTS role_api ( roleId int NOT NULL, apiId int NOT NULL, PRIMARY KEY (roleId,apiId), FOREIGN KEY (roleId) REFERENCES role(id), FOREIGN KEY (apiId) REFERENCES api(id));"
+    createSql = "CREATE TABLE  IF NOT EXISTS role_api ( roleName varchar(255) NOT NULL, apiUrl varchar(255) NOT NULL, PRIMARY KEY (roleName,apiUrl), FOREIGN KEY (roleName) REFERENCES role(roleName), FOREIGN KEY (apiUrl) REFERENCES api(apiUrl));"
     try:
         response = rds_client.execute_statement(
             secretArn=db_credentials_secrets_arn,
@@ -28,10 +28,10 @@ def lambda_handler(event, context):
     payload = json.loads(event['body'])
 
     # Extract values from the payload
-    apiId = payload['apiId']
-    roleId = payload['roleId']
+    apiUrl = payload['apiUrl']
+    roleName = payload['roleName']
 
-    insertSql = f"INSERT INTO role_api (roleId,apiId) VALUES ({roleId},{apiId})"
+    insertSql = f"INSERT INTO role_api (roleName,apiUrl) VALUES ('{roleName}','{apiUrl}')"
     # response = {"records": {}}
     try:
         rds_client.execute_statement(

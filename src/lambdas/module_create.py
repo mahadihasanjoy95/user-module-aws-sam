@@ -14,7 +14,7 @@ database_name = "usermodule"
 
 
 def lambda_handler(event, context):
-    createSql = "CREATE TABLE [IF NOT EXISTS] module ( id int NOT NULL, moduleName varchar(255) NOT NULL, isMenu TINYINT(1) NOT NULL, PRIMARY KEY (id));"
+    createSql = "CREATE TABLE IF NOT EXISTS module ( id int NOT NULL, moduleName varchar(255) NOT NULL, isMenu TINYINT(1) NOT NULL, PRIMARY KEY (id));"
     try:
         rds_client.execute_statement(
             secretArn=db_credentials_secrets_arn,
