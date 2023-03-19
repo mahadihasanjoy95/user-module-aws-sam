@@ -8,7 +8,7 @@ Description: >
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
   Function:
-    Timeout: 3
+    Timeout: 500
     MemorySize: 128
     Tracing: Active
     Environment:
@@ -86,6 +86,7 @@ Resources:
           DbName: !Ref DbName
           DbCluster: !GetAtt RDSCluster.DBClusterArn
           DbSecret: !Ref 'DBSecret'
+          DbClusterEndpoint: !GetAtt RDSCluster.Endpoint.Address
       CodeUri: src/lambdas
       Handler: user_create.lambda_handler
       Runtime: python3.9
@@ -433,7 +434,7 @@ Resources:
       VpcSecurityGroupIds:
       - !Ref "InstanceSecurityGroup"
       ScalingConfiguration:
-        AutoPause: true
+        AutoPause: false
         MaxCapacity: 16
         MinCapacity: 2
         SecondsUntilAutoPause: 300

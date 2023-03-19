@@ -30,6 +30,7 @@ print("DB SECRET::::::::::: ", db_credentials_secrets_arn)
 
 database_name = "usermodule"
 
+
 def auth_token_decode(token, api):
     """
         Checks whether JWT Token is valid or not.
@@ -70,13 +71,17 @@ def auth_token_decode(token, api):
             return False
         # TODO: This section will be enabled after adding role and permission from DB layer
         # return check_role_permission_dynamoDb(claims["cognito:groups"][0], api)
+        print("CLAIMS:::::::::::::::::: ", claims)
         return check_role_permission_rds(claims["cognito:groups"][0], api)
         # return True
     except Exception as e:
         print("NEW EXCEPTION:::::::::::::::::::: ", e)
         return False
 
+
 def check_role_permission_rds(role, api):
+    if role == "admin":
+        return True
     """
     Check the api has the role wise permission from RDS here
     """
@@ -163,6 +168,7 @@ def create_policy(method_arn, principal_id):
     policy.region = region
     policy.stage = stage
     return policy
+
 
 class HttpVerb:
     GET = 'GET'
