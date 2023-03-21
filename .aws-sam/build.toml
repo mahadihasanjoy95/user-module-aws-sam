@@ -11,3 +11,11 @@ packagetype = "Zip"
 functions = ["RoleCreate", "CreateUser", "LoginUserFunc", "GetUserFunc", "ApiCreate", "ModuleCreate", "FeatureCreate", "RoleAssign", "ApiAssign", "CustomAuthorizerFunction"]
 
 [layer_build_definitions]
+[layer_build_definitions.1eed2d2b-d6f5-464e-b571-374a5eadd56c]
+layer_name = "MyLibLayer"
+codeuri = "/home/mahadi/Documents/aws/sam/user-module/src/my_lib_layer"
+build_method = "python3.9"
+compatible_runtimes = ["python3.9"]
+architecture = "x86_64"
+manifest_hash = ""
+layer = "MyLibLayer"

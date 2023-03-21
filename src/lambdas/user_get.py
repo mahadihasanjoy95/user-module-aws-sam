@@ -1,10 +1,16 @@
-import boto3
-import os
 import json
-from boto3.dynamodb.conditions import Key
+import os
+from collections import namedtuple
+
+from rds_data import execute_statement
 
 DynamoTableName = os.getenv('DynamoTableName')
 RegionName = os.getenv('RegionName')
+
+
+# Define the function to convert the namedtuple to a dictionary
+def namedtuple_to_dict(obj):
+    return obj._asdict()
 
 
 def lambda_handler(message, context):
@@ -15,25 +21,23 @@ def lambda_handler(message, context):
             'headers': {},
             'body': json.dumps({'msg': 'Bad Request'})
         }
+    response = []
+    res = execute_statement("select * from user")
+    print("RESPONSE:::::: ", res)
+    User = namedtuple('User', ['id', 'firstName', 'lastName', 'userName', 'email'])
+    for record in res['records']:
+        print()
+        row_data = []
+        for data_dict in record:
+            # print(data_dict)
+            for data_type, data_value in data_dict.items():
+                row_data.append(data_value)
+        response.append(User(*row_data))
 
-    table_name = DynamoTableName
-    region = RegionName
-
-    item_table = boto3.resource(
-        'dynamodb',
-        region_name=region
-    )
-
-    table = item_table.Table(table_name)
-    """
-    Query to get all the users from the table
-    """
-    response = table.query(
-        KeyConditionExpression=Key('PK').eq('USER#')
-    )
+    print(response)
 
     return {
         "statusCode": 200,
         "headers": {},
-        'body': json.dumps(response['Items'], indent=4, sort_keys=True, default=str),  # default=decimal_default),
+        'body': json.dumps(response)  # default=decimal_default),
     }

@@ -18,6 +18,8 @@ Globals:
         UserPoolClient: !Ref UserPoolClient
         DynamoTableName: !Ref TableName
         RegionName: !Ref Region
+        DbArn: !GetAtt RDSCluster.DBClusterArn
+        SecretArn: !Ref 'DBSecret'
   Api:
     TracingEnabled: true
 Parameters:
@@ -50,6 +52,8 @@ Resources:
   RoleCreate:
     Type: AWS::Serverless::Function
     Properties:
+      Layers:
+        - !Ref MyLibLayer
       Environment:
         Variables:
           DbName: !Ref DbName
@@ -81,6 +85,8 @@ Resources:
   CreateUser:
     Type: AWS::Serverless::Function
     Properties:
+      Layers:
+        - !Ref MyLibLayer
       Environment:
         Variables:
           DbName: !Ref DbName
@@ -115,6 +121,8 @@ Resources:
   LoginUserFunc:
     Type: AWS::Serverless::Function
     Properties:
+      Layers:
+        - !Ref MyLibLayer
       CodeUri: src/lambdas/
       Handler: user_login.lambda_handler
       Runtime: python3.9
@@ -130,6 +138,8 @@ Resources:
   GetUserFunc:
     Type: AWS::Serverless::Function
     Properties:
+      Layers:
+        - !Ref MyLibLayer
       CodeUri: src/lambdas/
       Handler: user_get.lambda_handler
       Runtime: python3.9
@@ -140,13 +150,19 @@ Resources:
             Path: /user/get
             RestApiId: !Ref MyCustomApi
             Method: get
-
       Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref DynamoTable
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - "rds-data:ExecuteStatement"
+                - "secretsmanager:GetSecretValue"
+              Resource: '*'
   ApiCreate:
     Type: AWS::Serverless::Function
     Properties:
+      Layers:
+        - !Ref MyLibLayer
       Environment:
         Variables:
           DbName: !Ref DbName
@@ -173,6 +189,8 @@ Resources:
   ModuleCreate:
     Type: AWS::Serverless::Function
     Properties:
+      Layers:
+        - !Ref MyLibLayer
       Environment:
         Variables:
           DbName: !Ref DbName
@@ -199,6 +217,8 @@ Resources:
   FeatureCreate:
     Type: AWS::Serverless::Function
     Properties:
+      Layers:
+        - !Ref MyLibLayer
       Environment:
         Variables:
           DbName: !Ref DbName
@@ -225,6 +245,8 @@ Resources:
   RoleAssign:
     Type: AWS::Serverless::Function
     Properties:
+      Layers:
+        - !Ref MyLibLayer
       Environment:
         Variables:
           DbName: !Ref DbName
@@ -254,6 +276,8 @@ Resources:
   ApiAssign:
     Type: AWS::Serverless::Function
     Properties:
+      Layers:
+        - !Ref MyLibLayer
       Environment:
         Variables:
           DbName: !Ref DbName
@@ -284,6 +308,8 @@ Resources:
   CustomAuthorizerFunction:
     Type: AWS::Serverless::Function
     Properties:
+      Layers:
+        - !Ref MyLibLayer
       Environment:
         Variables:
           DbName: !Ref DbName
@@ -458,3 +484,24 @@ Resources:
       SecretId: !Ref DBSecret
       TargetId: !Ref RDSCluster
       TargetType: AWS::RDS::DBCluster
+  MyLibLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      ContentUri: src/my_lib_layer
+      CompatibleRuntimes:
+        - python3.9
+    Metadata:
+      BuildMethod: python3.9
+
+#  MyCustomResource:
+#    Type: Custom::MyCustomResource
+#    Properties:
+#      ServiceToken: !GetAtt MyCustomResourceFunction.Arn
+#
+#  MyCustomResourceFunction:
+#    Type: AWS::Serverless::Function
+#    Properties:
+#      CodeUri: src/lambdas/
+#      Handler: custom_lambda_function.lambda_handler
+#      Runtime: python3.9
+#      Timeout: 180

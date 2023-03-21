@@ -1,10 +1,20 @@
 import json
 import os
-import uuid
-from datetime import datetime
+from random import randint
+from rds_data import execute_statement
 
 import boto3
-from random import randint
+from datetime import datetime
+from http import HTTPStatus
+from typing import Optional, Any, Dict, List
+
+import pydantic
+from pydantic import BaseModel, Field, validator
+
+from aws_lambda_powertools import Logger
+from aws_lambda_powertools.event_handler import APIGatewayRestResolver
+from aws_lambda_powertools.logging import correlation_paths
+
 client = boto3.client('cognito-idp')
 
 UserPool = os.getenv('UserPool')
@@ -12,14 +22,20 @@ UserPool = os.getenv('UserPool')
 DynamoTableName = os.getenv('DynamoTableName')
 RegionName = os.getenv('RegionName')
 
+logger = Logger(service="APP")
 
-rds_client = boto3.client('rds-data')
-db_cluster_arn = os.getenv('DbCluster')
-print("DBCLUSTER::::::::::: ", db_cluster_arn)
-db_credentials_secrets_arn = os.getenv('DbSecret')
-print("DB SECRET::::::::::: ", db_credentials_secrets_arn)
 
-database_name = "usermodule"
+class UserModel(BaseModel):
+    userName: str = Field(..., max_length=10)
+    firstName: str
+    lastName: str
+    email: str
+    password: str
+
+    @validator('userName', each_item=True)
+    def check_names_not_empty(cls, v):
+        assert v != '', 'Empty strings are not allowed.'
+        return v
 
 
 def lambda_handler(message, context):
@@ -35,39 +51,37 @@ def lambda_handler(message, context):
     """
     createSql = "CREATE TABLE  IF NOT EXISTS user ( id int NOT NULL, firstName varchar(255) NOT NULL, lastName varchar(255) NOT NULL, userName varchar(255) NOT NULL, email varchar(255) NOT NULL, PRIMARY KEY (id));"
     try:
-        response = rds_client.execute_statement(
-            secretArn=db_credentials_secrets_arn,
-            database=database_name,
-            resourceArn=db_cluster_arn,
-            sql=createSql
-        )
+        response = execute_statement(createSql)
         print("RESPONSE::::::::::::::::: ", response)
     except Exception as e:
         print("Exception to create user table::::::::::  ", e)
     payload = json.loads(message['body'])
+    try:
+        user_post = UserModel(**payload)
+    except Exception as e:
+        print("Exception to create user table::::::::::  ", e)
+        return {"statusCode": 400,
+                'body': json.dumps({"message": "Bad Request!!"}),
+                # "location": ip.text.replace("\n", "")
 
+                }
     # Extract values from the payload
-    firstName = payload['firstName']
-    lastName = payload['lastName']
-    userName = payload['userName']
-    email = payload['email']
+    firstName = user_post.firstName
+    lastName = user_post.lastName
+    userName = user_post.userName
+    email = user_post.email
     randomId = randint(1, 1000)
 
     insertSql = f"INSERT INTO user (id,firstName, lastName, userName,email) VALUES ({randomId},'{firstName}', '{lastName}','{userName}','{email}')"
     # response = {"records": {}}
     try:
-        rds_client.execute_statement(
-            secretArn=db_credentials_secrets_arn,
-            database=database_name,
-            resourceArn=db_cluster_arn,
-            sql=insertSql
-        )
+        execute_statement(insertSql)
         """
            Create user forcefully confirm the user mail also and generate random password.
-           """
+        """
         response = client.admin_create_user(
             UserPoolId=UserPool,
-            Username=payload['email'],
+            Username=user_post.email,
             MessageAction='SUPPRESS',
         )
 
@@ -76,8 +90,8 @@ def lambda_handler(message, context):
         """
         client.admin_set_user_password(
             UserPoolId=UserPool,
-            Username=payload['email'],
-            Password=payload['password'],
+            Username=user_post.email,
+            Password=user_post.password,
             Permanent=True
         )
 
@@ -123,5 +137,3 @@ def lambda_handler(message, context):
     #     TableName=table_name,
     #     Item=params
     # )
-
-

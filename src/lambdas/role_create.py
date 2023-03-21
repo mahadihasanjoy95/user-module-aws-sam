@@ -57,28 +57,19 @@
 
 import json
 import os
-from random import randint
 
 import boto3
+from rds_data import execute_statement
 
-rds_client = boto3.client('rds-data')
-db_cluster_arn = os.getenv('DbCluster')
-print("DBCLUSTER::::::::::: ", db_cluster_arn)
-db_credentials_secrets_arn = os.getenv('DbSecret')
-print("DB SECRET::::::::::: ", db_credentials_secrets_arn)
 UserPool = os.getenv('UserPool')
-database_name = "usermodule"
 
 client = boto3.client('cognito-idp')
+
+
 def lambda_handler(event, context):
     createSql = "CREATE TABLE  IF NOT EXISTS role (roleName varchar(255) NOT NULL, roleDescription varchar(255) NOT NULL, PRIMARY KEY (roleName));"
     try:
-        response = rds_client.execute_statement(
-            secretArn=db_credentials_secrets_arn,
-            database=database_name,
-            resourceArn=db_cluster_arn,
-            sql=createSql
-        )
+        response = execute_statement(createSql)
         print("RESPONSE::::::::::::::::: ", response)
     except Exception as e:
         print("Exception to create role table::::::::::  ", e)
@@ -91,12 +82,7 @@ def lambda_handler(event, context):
     insertSql = f"INSERT INTO role (roleName, roleDescription) VALUES ('{roleName}', '{roleDescription}')"
     # response = {"records": {}}
     try:
-        rds_client.execute_statement(
-            secretArn=db_credentials_secrets_arn,
-            database=database_name,
-            resourceArn=db_cluster_arn,
-            sql=insertSql
-        )
+        execute_statement(insertSql)
         """
         #     Create group into user-pool. Here group is actually define the role
         #     """

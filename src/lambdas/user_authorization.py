@@ -7,6 +7,7 @@ import urllib.request
 import boto3
 from jose import jwk, jwt
 from jose.utils import base64url_decode
+from rds_data import execute_statement
 
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table('pwsp_revenue_system')
@@ -21,14 +22,6 @@ keys_url = 'https://cognito-idp.{}.amazonaws.com/{}/.well-known/jwks.json'.forma
 with urllib.request.urlopen(keys_url) as f:
     response = f.read()
 keys = json.loads(response.decode('utf-8'))['keys']
-
-rds_client = boto3.client('rds-data')
-db_cluster_arn = os.getenv('DbCluster')
-print("DBCLUSTER::::::::::: ", db_cluster_arn)
-db_credentials_secrets_arn = os.getenv('DbSecret')
-print("DB SECRET::::::::::: ", db_credentials_secrets_arn)
-
-database_name = "usermodule"
 
 
 def auth_token_decode(token, api):
@@ -96,12 +89,7 @@ def check_role_permission_rds(role, api):
         # Check that this role and path exists in role_api table or not
         # Check if the row exists
         sql_query = f'SELECT 1 FROM role_api WHERE roleName = \'{role}\' AND apiUrl = \'{api_path}\''
-        response = rds_client.execute_statement(
-            secretArn=db_credentials_secrets_arn,
-            database=database_name,
-            resourceArn=db_cluster_arn,
-            sql=sql_query
-        )
+        response = execute_statement(sql_query)
         print("DB RESPONSE:::::::: ", response['records'])
         # If the SELECT query returns any rows, then the row exists
         row_exists = len(response['records']) > 0
