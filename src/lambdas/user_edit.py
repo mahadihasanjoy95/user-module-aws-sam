@@ -1,11 +1,10 @@
 import json
 import os
-from random import randint
 
 import boto3
 from aws_lambda_powertools import Logger
 from rds_data import execute_statement
-from user_model import UserModel
+from user_model import UserEditModel
 
 client = boto3.client('cognito-idp')
 
@@ -25,9 +24,12 @@ def lambda_handler(message, context):
             'headers': {},
             'body': json.dumps({'msg': 'Bad Request'})
         }
+    """
+    Insert Aurora MySQL part
+    """
     payload = json.loads(message['body'])
     try:
-        user_post = UserModel(**payload)
+        user_post = UserEditModel(**payload)
     except Exception as e:
         print("Exception to create user table::::::::::  ", e)
         return {"statusCode": 400,
@@ -42,38 +44,26 @@ def lambda_handler(message, context):
     dob = user_post.dob
     address = user_post.address
     userType = user_post.userType
-    email = user_post.email
-    employeeId = "ABCDEFGHIJKLMN"
-    isActive = True
-    # randomId = randint(1, 1000)
+    userId = user_post.id
+    parameters = [
+        {'name': 'name', 'value': {'stringValue': name}},
+        {'name': 'mothersName', 'value': {'stringValue': mothersName}},
+        {'name': 'fathersName', 'value': {'stringValue': fathersName}},
+        {'name': 'dob', 'value': {'stringValue': dob}},
+        {'name': 'address', 'value': {'stringValue': address}},
+        {'name': 'userType', 'value': {'stringValue': userType}},
+        {'name': 'userId', 'value': {'longValue': userId}}
+    ]
 
-    insertSql = f"INSERT INTO user (name, mothersName, fathersName, dob, address, userType, email, employeeId, isActive) VALUES ('{name}', '{mothersName}','{fathersName}','{dob}','{address}','{userType}','{email}','{employeeId}', {isActive})"
+    editSql = f"UPDATE user SET name = :name, mothersName = :mothersName, fathersName = :fathersName, dob = :dob, address = :address, userType = :userType  WHERE id  = :userId;"
     # response = {"records": {}}
     try:
-        execute_statement(insertSql)
-        """
-           Create user forcefully confirm the user mail also and generate random password.
-        """
-        response = client.admin_create_user(
-            UserPoolId=UserPool,
-            Username=user_post.email,
-            MessageAction='SUPPRESS',
-        )
-
-        """
-        Set the actual password to the user
-        """
-        client.admin_set_user_password(
-            UserPoolId=UserPool,
-            Username=user_post.email,
-            Password=user_post.password,
-            Permanent=True
-        )
-
+        execute_statement(editSql, parameters)
         return {
             "statusCode": 200,
             "headers": {},
-            'body': json.dumps(response, indent=4, sort_keys=True, default=str),  # default=decimal_default),
+            'body': json.dumps({"message": "Successfully Updated!"}, indent=4, sort_keys=True, default=str),
+            # default=decimal_default),
         }
     except Exception as e:
         print("Exception to insert in api table::::::::::  ", e)

@@ -118,6 +118,197 @@ Resources:
                 - "rds-data:ExecuteStatement"
                 - "secretsmanager:GetSecretValue"
               Resource: '*'
+  UpdateUser:
+    Type: AWS::Serverless::Function
+    Properties:
+      Layers:
+        - !Ref MyLibLayer
+      Environment:
+        Variables:
+          DbName: !Ref DbName
+          DbCluster: !GetAtt RDSCluster.DBClusterArn
+          DbSecret: !Ref 'DBSecret'
+          DbClusterEndpoint: !GetAtt RDSCluster.Endpoint.Address
+      CodeUri: src/lambdas
+      Handler: user_edit.lambda_handler
+      Runtime: python3.9
+      Events:
+        CreateUser:
+          Type: Api
+          Properties:
+            Path: /user/edit
+            RestApiId: !Ref MyCustomApi
+            Method: post
+            Auth:
+              Authorizer: NONE
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref DynamoTable
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - "rds-data:ExecuteStatement"
+                - "secretsmanager:GetSecretValue"
+              Resource: '*'
+  UpdateUser:
+    Type: AWS::Serverless::Function
+    Properties:
+      Layers:
+        - !Ref MyLibLayer
+      Environment:
+        Variables:
+          DbName: !Ref DbName
+          DbCluster: !GetAtt RDSCluster.DBClusterArn
+          DbSecret: !Ref 'DBSecret'
+          DbClusterEndpoint: !GetAtt RDSCluster.Endpoint.Address
+      CodeUri: src/lambdas
+      Handler: user_edit.lambda_handler
+      Runtime: python3.9
+      Events:
+        CreateUser:
+          Type: Api
+          Properties:
+            Path: /user/edit
+            RestApiId: !Ref MyCustomApi
+            Method: post
+            Auth:
+              Authorizer: NONE
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref DynamoTable
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - "rds-data:ExecuteStatement"
+                - "secretsmanager:GetSecretValue"
+              Resource: '*'
+  ImageUpdate:
+    Type: AWS::Serverless::Function
+    Properties:
+      Layers:
+        - !Ref MyLibLayer
+      Environment:
+        Variables:
+          DbName: !Ref DbName
+          DbCluster: !GetAtt RDSCluster.DBClusterArn
+          DbSecret: !Ref 'DBSecret'
+          DbClusterEndpoint: !GetAtt RDSCluster.Endpoint.Address
+      CodeUri: src/lambdas
+      Handler: user_image_upload.lambda_handler
+      Runtime: python3.9
+      Events:
+        CreateUser:
+          Type: Api
+          Properties:
+            Path: /user/image/update
+            RestApiId: !Ref MyCustomApi
+            Method: post
+            Auth:
+              Authorizer: NONE
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref DynamoTable
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - "rds-data:ExecuteStatement"
+                - "secretsmanager:GetSecretValue"
+              Resource: '*'
+  DeleteUser:
+    Type: AWS::Serverless::Function
+    Properties:
+      Layers:
+        - !Ref MyLibLayer
+      Environment:
+        Variables:
+          DbName: !Ref DbName
+          DbCluster: !GetAtt RDSCluster.DBClusterArn
+          DbSecret: !Ref 'DBSecret'
+          DbClusterEndpoint: !GetAtt RDSCluster.Endpoint.Address
+      CodeUri: src/lambdas
+      Handler: user_delete.lambda_handler
+      Runtime: python3.9
+      Events:
+        CreateUser:
+          Type: Api
+          Properties:
+            Path: /user/delete/{id}
+            RestApiId: !Ref MyCustomApi
+            Method: get
+            Auth:
+              Authorizer: NONE
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - "cognito-idp:AdminDeleteUser"
+                - "rds-data:ExecuteStatement"
+                - "secretsmanager:GetSecretValue"
+              Resource: '*'
+  DeleteRole:
+    Type: AWS::Serverless::Function
+    Properties:
+      Layers:
+        - !Ref MyLibLayer
+      Environment:
+        Variables:
+          DbName: !Ref DbName
+          DbCluster: !GetAtt RDSCluster.DBClusterArn
+          DbSecret: !Ref 'DBSecret'
+          DbClusterEndpoint: !GetAtt RDSCluster.Endpoint.Address
+      CodeUri: src/lambdas
+      Handler: role_delete.lambda_handler
+      Runtime: python3.9
+      Events:
+        CreateUser:
+          Type: Api
+          Properties:
+            Path: /role/delete/{name}
+            RestApiId: !Ref MyCustomApi
+            Method: get
+            Auth:
+              Authorizer: NONE
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - "cognito-idp:AdminDeleteUser"
+                - "rds-data:ExecuteStatement"
+                - "secretsmanager:GetSecretValue"
+              Resource: '*'
+  PasswordChnage:
+    Type: AWS::Serverless::Function
+    Properties:
+      Layers:
+        - !Ref MyLibLayer
+      Environment:
+        Variables:
+          DbName: !Ref DbName
+          DbCluster: !GetAtt RDSCluster.DBClusterArn
+          DbSecret: !Ref 'DBSecret'
+          DbClusterEndpoint: !GetAtt RDSCluster.Endpoint.Address
+      CodeUri: src/lambdas
+      Handler: user_change_password.lambda_handler
+      Runtime: python3.9
+      Events:
+        CreateUser:
+          Type: Api
+          Properties:
+            Path: /user/password/change
+            RestApiId: !Ref MyCustomApi
+            Method: post
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - "cognito-idp:AdminSetUserPassword"
+              Resource: '*'
   LoginUserFunc:
     Type: AWS::Serverless::Function
     Properties:
@@ -148,6 +339,29 @@ Resources:
           Type: Api
           Properties:
             Path: /user/get
+            RestApiId: !Ref MyCustomApi
+            Method: get
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - "rds-data:ExecuteStatement"
+                - "secretsmanager:GetSecretValue"
+              Resource: '*'
+  GetRoleFunc:
+    Type: AWS::Serverless::Function
+    Properties:
+      Layers:
+        - !Ref MyLibLayer
+      CodeUri: src/lambdas/
+      Handler: role_list.lambda_handler
+      Runtime: python3.9
+      Events:
+        GetUsers:
+          Type: Api
+          Properties:
+            Path: /role/get
             RestApiId: !Ref MyCustomApi
             Method: get
       Policies:
@@ -493,15 +707,42 @@ Resources:
     Metadata:
       BuildMethod: python3.9
 
-#  MyCustomResource:
-#    Type: Custom::MyCustomResource
-#    Properties:
-#      ServiceToken: !GetAtt MyCustomResourceFunction.Arn
-#
-#  MyCustomResourceFunction:
-#    Type: AWS::Serverless::Function
-#    Properties:
-#      CodeUri: src/lambdas/
-#      Handler: custom_lambda_function.lambda_handler
-#      Runtime: python3.9
-#      Timeout: 180
+  MyCustomResource:
+    Type: Custom::MyCustomResource
+    Properties:
+      ServiceToken: !GetAtt MyCustomResourceFunction.Arn
+      MethodArn: !Ref MyCustomResourceFunction
+#      ForceUpdate:
+#        Fn::Sub: "${AWS::StackId}-${AWS::Region}-${AWS::AccountId}-$(date +%s)"
+  MyCustomResourceFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Layers:
+        - !Ref MyLibLayer
+      CodeUri: src/lambdas/
+      Handler: custom_lambda_function.lambda_handler
+      Runtime: python3.9
+      Timeout: 180
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - "rds-data:ExecuteStatement"
+                - "secretsmanager:GetSecretValue"
+              Resource: '*'
+  MyS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: my-bucket-water
+      AccessControl: PublicRead
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders:
+              - "*"
+            AllowedMethods:
+              - GET
+              - PUT
+              - POST
+            AllowedOrigins:
+              - "*"

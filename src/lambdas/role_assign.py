@@ -9,12 +9,6 @@ UserPool = os.getenv('UserPool')
 
 
 def lambda_handler(event, context):
-    createSql = "CREATE TABLE  IF NOT EXISTS user_role ( userId int NOT NULL, roleName varchar(255) NOT NULL, PRIMARY KEY (userId,roleName), FOREIGN KEY (userId) REFERENCES user(id), FOREIGN KEY (roleName) REFERENCES role(roleName));"
-    try:
-        response = execute_statement(createSql)
-        print("RESPONSE::::::::::::::::: ", response)
-    except Exception as e:
-        print("Exception to create user_role table::::::::::  ", e)
     payload = json.loads(event['body'])
 
     # Extract values from the payload
@@ -27,7 +21,7 @@ def lambda_handler(event, context):
     parametersForUser = [{'name': 'id', 'value': {'longValue': int(userId)}}]
 
     sqlForFetchEmail = "SELECT email FROM user WHERE id = :id"
-    response = execute_statement(sqlForFetchEmail)
+    response = execute_statement(sqlForFetchEmail, parametersForUser)
 
     # parse user email from response
     user_email = None

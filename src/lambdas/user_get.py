@@ -1,6 +1,5 @@
 import json
 import os
-from collections import namedtuple
 
 from rds_data import execute_statement
 
@@ -21,23 +20,36 @@ def lambda_handler(message, context):
             'headers': {},
             'body': json.dumps({'msg': 'Bad Request'})
         }
-    response = []
-    res = execute_statement("select * from user")
-    print("RESPONSE:::::: ", res)
-    User = namedtuple('User', ['id', 'firstName', 'lastName', 'userName', 'email'])
-    for record in res['records']:
-        print()
-        row_data = []
-        for data_dict in record:
-            # print(data_dict)
-            for data_type, data_value in data_dict.items():
-                row_data.append(data_value)
-        response.append(User(*row_data))
+    params = message['queryStringParameters']
+    page_size = params.get('limit')
+    page_number = params.get('offset')
+    offset = (int(page_number) - 1) * int(page_size)
+    parameters = [
+        {'name': 'page_size', 'value': {'longValue': int(page_size)}},
+        {'name': 'offset', 'value': {'longValue': offset}}
+    ]
 
-    print(response)
+    response = execute_statement("select id, name, mothersName, fathersName, email, employeeId, dob, address, userType, isActive from user LIMIT :page_size OFFSET :offset", parameters)
+    # response = execute_statement("select id, name, mothersName, fathersName, email, employeeId, dob, address, userType, isActive, roleName from user LEFT JOIN user_role ON user.id = user_role.userId LIMIT :page_size OFFSET :offset", parameters)
+    print("RESPONSE:::::: ", response)
+    data = []
+    for row in response['records']:
+        item = {}
+        for i, value in enumerate(row):
+            if value.get('isNull'):
+                item[response['columnMetadata'][i]['name']] = None
+            else:
+                value_type = list(value.keys())[0]
+                if value_type == 'longValue':
+                    item[response['columnMetadata'][i]['name']] = int(value[value_type])
+                elif value_type == 'booleanValue':
+                    item[response['columnMetadata'][i]['name']] = bool(value[value_type])
+                else:
+                    item[response['columnMetadata'][i]['name']] = value[value_type]
+        data.append(item)
 
+    json_data = json.dumps(data)
     return {
-        "statusCode": 200,
-        "headers": {},
-        'body': json.dumps(response)  # default=decimal_default),
+        'statusCode': 200,
+        'body': json_data
     }

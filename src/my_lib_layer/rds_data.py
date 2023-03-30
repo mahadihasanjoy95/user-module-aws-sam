@@ -10,15 +10,25 @@ print("DB SECRET::::::::::: ", db_credentials_secrets_arn)
 database_name = "usermodule"
 
 
-def execute_statement(sql):
+def execute_statement(sql, param=None):
     try:
-        response = rds_client.execute_statement(
-            secretArn=db_credentials_secrets_arn,
-            resourceArn=db_cluster_arn,
-            database=database_name,
-            sql=sql,
-            includeResultMetadata=False
-        )
+        if param is None:
+            response = rds_client.execute_statement(
+                secretArn=db_credentials_secrets_arn,
+                resourceArn=db_cluster_arn,
+                database=database_name,
+                sql=sql,
+                includeResultMetadata=True
+            )
+        else:
+            response = rds_client.execute_statement(
+                secretArn=db_credentials_secrets_arn,
+                resourceArn=db_cluster_arn,
+                database=database_name,
+                sql=sql,
+                parameters=param,
+                includeResultMetadata=True
+            )
         return response
     except Exception as e:
         print(str(e))

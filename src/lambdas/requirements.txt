@@ -3,3 +3,4 @@ PyJWT==2.6.0
 python-jose
 pymysql
 crhelper
+cfnresponse
