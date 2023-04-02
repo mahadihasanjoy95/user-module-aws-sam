@@ -1,3 +1,4 @@
+import re
 from datetime import datetime
 
 from pydantic import BaseModel, validator, constr, EmailStr, conint
@@ -15,12 +16,18 @@ class UserModel(BaseModel):
     dob: str
     email: EmailStr
     password: str
+    phoneNumber: str
 
     # @validator('userName', each_item=True)
     # def check_names_not_empty(cls, v):
     #     assert v != '', 'Empty strings are not allowed.'
     #     return v
-
+    @validator('phoneNumber')
+    def validate_phone_number(cls, phoneNumber):
+        pattern = re.compile(r'^\+?[1-9]\d{1,14}$')
+        if not pattern.match(phoneNumber):
+            raise ValueError('Invalid phone number')
+        return phoneNumber
     @validator('password')
     def validate_password(cls, value):
         if len(value) < 8:

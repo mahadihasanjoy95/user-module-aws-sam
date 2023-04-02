@@ -2,8 +2,8 @@ import os
 import boto3
 
 rds_client = boto3.client('rds-data')
-db_cluster_arn = os.getenv('DbArn')
-print("DBCLUSTER::::::::::: ", db_cluster_arn)
+# db_cluster_arn = os.getenv('DbArn')
+# print("DBCLUSTER::::::::::: ", db_cluster_arn)
 db_credentials_secrets_arn = os.getenv('SecretArn')
 print("DB SECRET::::::::::: ", db_credentials_secrets_arn)
 
@@ -15,7 +15,7 @@ def execute_statement(sql, param=None):
         if param is None:
             response = rds_client.execute_statement(
                 secretArn=db_credentials_secrets_arn,
-                resourceArn=db_cluster_arn,
+                # resourceArn=db_cluster_arn,
                 database=database_name,
                 sql=sql,
                 includeResultMetadata=True
@@ -23,7 +23,7 @@ def execute_statement(sql, param=None):
         else:
             response = rds_client.execute_statement(
                 secretArn=db_credentials_secrets_arn,
-                resourceArn=db_cluster_arn,
+                # resourceArn=db_cluster_arn,
                 database=database_name,
                 sql=sql,
                 parameters=param,

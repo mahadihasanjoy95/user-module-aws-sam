@@ -1,3 +1,4 @@
+import datetime
 import json
 import os
 
@@ -43,6 +44,7 @@ def lambda_handler(message, context):
     fathersName = user_post.fathersName
     dob = user_post.dob
     address = user_post.address
+    updated_at = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     userType = user_post.userType
     userId = user_post.id
     parameters = [
@@ -52,10 +54,11 @@ def lambda_handler(message, context):
         {'name': 'dob', 'value': {'stringValue': dob}},
         {'name': 'address', 'value': {'stringValue': address}},
         {'name': 'userType', 'value': {'stringValue': userType}},
-        {'name': 'userId', 'value': {'longValue': userId}}
+        {'name': 'userId', 'value': {'longValue': userId}},
+        {'name': 'updatedAt', 'value': {'stringValue': updated_at}}
     ]
 
-    editSql = f"UPDATE user SET name = :name, mothersName = :mothersName, fathersName = :fathersName, dob = :dob, address = :address, userType = :userType  WHERE id  = :userId;"
+    editSql = f"UPDATE user SET name = :name, mothersName = :mothersName, fathersName = :fathersName, dob = :dob, address = :address, updatedAt = :updatedAt, userType = :userType  WHERE id  = :userId;"
     # response = {"records": {}}
     try:
         execute_statement(editSql, parameters)

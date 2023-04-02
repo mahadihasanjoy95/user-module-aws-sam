@@ -15,8 +15,9 @@ def lambda_handler(event, context):
     # Extract values from the payload
     roleName = payload['roleName']
     roleDescription = payload['roleDescription']
+    isActive = payload['status']
 
-    insertSql = f"INSERT INTO role (roleName, roleDescription) VALUES ('{roleName}', '{roleDescription}')"
+    insertSql = f"INSERT INTO role (roleName, roleDescription, isActive) VALUES ('{roleName}', '{roleDescription}', {isActive})"
     try:
         execute_statement(insertSql)
         """

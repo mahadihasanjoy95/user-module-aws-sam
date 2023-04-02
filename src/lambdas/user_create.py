@@ -1,9 +1,10 @@
+import datetime
 import json
 import os
-from random import randint
 
 import boto3
 from aws_lambda_powertools import Logger
+from botocore.exceptions import ClientError
 from rds_data import execute_statement
 from user_model import UserModel
 
@@ -43,14 +44,23 @@ def lambda_handler(message, context):
     address = user_post.address
     userType = user_post.userType
     email = user_post.email
+    phoneNumber = user_post.phoneNumber
+    created_at = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     employeeId = "ABCDEFGHIJKLMN"
     isActive = True
     # randomId = randint(1, 1000)
+    emailExists = check_email_exists(email)
+    if emailExists:
+        return {"statusCode": 400,
+                'body': json.dumps({"message": "Email already exists in userpool"}),
+                }
 
-    insertSql = f"INSERT INTO user (name, mothersName, fathersName, dob, address, userType, email, employeeId, isActive) VALUES ('{name}', '{mothersName}','{fathersName}','{dob}','{address}','{userType}','{email}','{employeeId}', {isActive})"
+    insertSql = f"INSERT INTO user (name, mothersName, fathersName, dob, address, userType, email, employeeId, isActive, phoneNumber, createdAt) VALUES ('{name}', '{mothersName}','{fathersName}','{dob}','{address}','{userType}','{email}','{employeeId}', {isActive},'{phoneNumber}','{created_at}')"
     # response = {"records": {}}
     try:
-        execute_statement(insertSql)
+        res = execute_statement(insertSql)
+        userId = res['generatedFields'][0]['longValue']
+
         """
            Create user forcefully confirm the user mail also and generate random password.
         """
@@ -73,7 +83,7 @@ def lambda_handler(message, context):
         return {
             "statusCode": 200,
             "headers": {},
-            'body': json.dumps(response, indent=4, sort_keys=True, default=str),  # default=decimal_default),
+            'body': json.dumps({'userId': userId}, indent=4, sort_keys=True, default=str),  # default=decimal_default),
         }
     except Exception as e:
         print("Exception to insert in api table::::::::::  ", e)
@@ -82,3 +92,17 @@ def lambda_handler(message, context):
                 # "location": ip.text.replace("\n", "")
 
                 }
+
+
+def check_email_exists(email):
+    try:
+        response = client.admin_get_user(
+            UserPoolId=UserPool,
+            Username=email
+        )
+        return True
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'UserNotFoundException':
+            return False
+        else:
+            raise e

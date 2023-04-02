@@ -4,7 +4,7 @@ from rds_data import execute_statement
 
 def lambda_handler(event, context):
     # arn:aws:s3:::my-bucket-water
-    # sql_statement = f"ALTER TABLE user ADD COLUMN imageLink varchar(255)"
+    # sql_statement = f"ALTER TABLE user ADD COLUMN createdAt DATE"
     # try:
     #     response = execute_statement(sql_statement)
     #     print("RESPONSE::::::::::::::::: ", response)
@@ -34,10 +34,26 @@ def lambda_handler(event, context):
         print("RESPONSE::::::::::::::::: ", response)
     except Exception as e:
         print("Exception to create user table::::::::::  ", e)
+    addressTable = "CREATE TABLE IF NOT EXISTS address " \
+                   "( " \
+                   "area varchar(255), " \
+                   "postOffice varchar(255), " \
+                   "thana varchar(255), " \
+                   "district varchar(255) , " \
+                   "postCode int, " \
+                   "addresype varchar(255) , " \
+                   "userId int NOT NULL, " \
+                   "FOREIGN KEY (userId) REFERENCES user(id));"
+    try:
+        response = execute_statement(addressTable)
+        print("RESPONSE::::::::::::::::: ", response)
+    except Exception as e:
+        print("Exception to create address table::::::::::  ", e)
     roleTable = "CREATE TABLE  IF NOT EXISTS role " \
                 "(" \
                 "roleName varchar(255) NOT NULL, " \
                 "roleDescription varchar(255) NOT NULL, " \
+                "isActive BOOLEAN NOT NULL," \
                 "PRIMARY KEY (roleName));"
     try:
         response = execute_statement(roleTable)
@@ -108,7 +124,7 @@ def lambda_handler(event, context):
         print("RESPONSE::::::::::::::::: ", response)
     except Exception as e:
         print("Exception to create role_api table::::::::::  ", e)
-    insertRoleSql = f"INSERT INTO role (roleName, roleDescription) VALUES ('admin', 'This is the super user of the system')"
+    insertRoleSql = f"INSERT INTO role (roleName, roleDescription, isActive) VALUES ('admin', 'This is the super user of the system', TRUE)"
     try:
         response = execute_statement(insertRoleSql)
         print("RESPONSE::::::::::::::::: ", response)

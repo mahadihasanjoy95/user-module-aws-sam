@@ -33,10 +33,20 @@ def lambda_handler(message, context):
     for row in response['records']:
         item = {}
         for i, value in enumerate(row):
-            item[response['columnMetadata'][i]['name']] = value['stringValue']
+            if value.get('isNull'):
+                item[response['columnMetadata'][i]['name']] = None
+            else:
+                value_type = list(value.keys())[0]
+                if value_type == 'longValue':
+                    item[response['columnMetadata'][i]['name']] = int(value[value_type])
+                elif value_type == 'booleanValue':
+                    item[response['columnMetadata'][i]['name']] = bool(value[value_type])
+                else:
+                    item[response['columnMetadata'][i]['name']] = value[value_type]
         data.append(item)
 
+    json_data = json.dumps(data)
     return {
         'statusCode': 200,
-        'body': json.dumps(data)
+        'body': json_data
     }

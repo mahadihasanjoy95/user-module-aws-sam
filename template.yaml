@@ -18,11 +18,14 @@ Globals:
         UserPoolClient: !Ref UserPoolClient
         DynamoTableName: !Ref TableName
         RegionName: !Ref Region
-        DbArn: !GetAtt RDSCluster.DBClusterArn
-        SecretArn: !Ref 'DBSecret'
+#        DbArn: !GetAtt RDSCluster.DBClusterArn
+#        SecretArn: !Ref 'DBSecret'
   Api:
     TracingEnabled: true
 Parameters:
+  IdentityPoolName:
+    Type: String
+    Default: 'user-module-identity-pool'
   Stage:
     Type: String
   ProjectName:
@@ -57,8 +60,8 @@ Resources:
       Environment:
         Variables:
           DbName: !Ref DbName
-          DbCluster: !GetAtt RDSCluster.DBClusterArn
-          DbSecret: !Ref 'DBSecret'
+#          DbCluster: !GetAtt RDSCluster.DBClusterArn
+#          DbSecret: !Ref 'DBSecret'
       CodeUri: src/lambdas
       Handler: role_create.lambda_handler
       Runtime: python3.9
@@ -90,9 +93,9 @@ Resources:
       Environment:
         Variables:
           DbName: !Ref DbName
-          DbCluster: !GetAtt RDSCluster.DBClusterArn
-          DbSecret: !Ref 'DBSecret'
-          DbClusterEndpoint: !GetAtt RDSCluster.Endpoint.Address
+#          DbCluster: !GetAtt RDSCluster.DBClusterArn
+#          DbSecret: !Ref 'DBSecret'
+#          DbClusterEndpoint: !GetAtt RDSCluster.Endpoint.Address
       CodeUri: src/lambdas
       Handler: user_create.lambda_handler
       Runtime: python3.9
@@ -115,6 +118,7 @@ Resources:
                 - "cognito-idp:AdminCreateUser"
                 - "cognito-idp:AdminSetUserPassword"
                 - "cognito-idp:AdminAddUserToGroup"
+                - "cognito-idp:AdminGetUser"
                 - "rds-data:ExecuteStatement"
                 - "secretsmanager:GetSecretValue"
               Resource: '*'
@@ -126,9 +130,9 @@ Resources:
       Environment:
         Variables:
           DbName: !Ref DbName
-          DbCluster: !GetAtt RDSCluster.DBClusterArn
-          DbSecret: !Ref 'DBSecret'
-          DbClusterEndpoint: !GetAtt RDSCluster.Endpoint.Address
+#          DbCluster: !GetAtt RDSCluster.DBClusterArn
+#          DbSecret: !Ref 'DBSecret'
+#          DbClusterEndpoint: !GetAtt RDSCluster.Endpoint.Address
       CodeUri: src/lambdas
       Handler: user_edit.lambda_handler
       Runtime: python3.9
@@ -151,39 +155,39 @@ Resources:
                 - "rds-data:ExecuteStatement"
                 - "secretsmanager:GetSecretValue"
               Resource: '*'
-  UpdateUser:
-    Type: AWS::Serverless::Function
-    Properties:
-      Layers:
-        - !Ref MyLibLayer
-      Environment:
-        Variables:
-          DbName: !Ref DbName
-          DbCluster: !GetAtt RDSCluster.DBClusterArn
-          DbSecret: !Ref 'DBSecret'
-          DbClusterEndpoint: !GetAtt RDSCluster.Endpoint.Address
-      CodeUri: src/lambdas
-      Handler: user_edit.lambda_handler
-      Runtime: python3.9
-      Events:
-        CreateUser:
-          Type: Api
-          Properties:
-            Path: /user/edit
-            RestApiId: !Ref MyCustomApi
-            Method: post
-            Auth:
-              Authorizer: NONE
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref DynamoTable
-        - Version: '2012-10-17'
-          Statement:
-            - Effect: Allow
-              Action:
-                - "rds-data:ExecuteStatement"
-                - "secretsmanager:GetSecretValue"
-              Resource: '*'
+#  UpdateUser:
+#    Type: AWS::Serverless::Function
+#    Properties:
+#      Layers:
+#        - !Ref MyLibLayer
+#      Environment:
+#        Variables:
+#          DbName: !Ref DbName
+#          DbCluster: !GetAtt RDSCluster.DBClusterArn
+#          DbSecret: !Ref 'DBSecret'
+#          DbClusterEndpoint: !GetAtt RDSCluster.Endpoint.Address
+#      CodeUri: src/lambdas
+#      Handler: user_edit.lambda_handler
+#      Runtime: python3.9
+#      Events:
+#        CreateUser:
+#          Type: Api
+#          Properties:
+#            Path: /user/edit
+#            RestApiId: !Ref MyCustomApi
+#            Method: post
+#            Auth:
+#              Authorizer: NONE
+#      Policies:
+#        - DynamoDBCrudPolicy:
+#            TableName: !Ref DynamoTable
+#        - Version: '2012-10-17'
+#          Statement:
+#            - Effect: Allow
+#              Action:
+#                - "rds-data:ExecuteStatement"
+#                - "secretsmanager:GetSecretValue"
+#              Resource: '*'
   ImageUpdate:
     Type: AWS::Serverless::Function
     Properties:
@@ -192,9 +196,9 @@ Resources:
       Environment:
         Variables:
           DbName: !Ref DbName
-          DbCluster: !GetAtt RDSCluster.DBClusterArn
-          DbSecret: !Ref 'DBSecret'
-          DbClusterEndpoint: !GetAtt RDSCluster.Endpoint.Address
+#          DbCluster: !GetAtt RDSCluster.DBClusterArn
+#          DbSecret: !Ref 'DBSecret'
+#          DbClusterEndpoint: !GetAtt RDSCluster.Endpoint.Address
       CodeUri: src/lambdas
       Handler: user_image_upload.lambda_handler
       Runtime: python3.9
@@ -225,9 +229,9 @@ Resources:
       Environment:
         Variables:
           DbName: !Ref DbName
-          DbCluster: !GetAtt RDSCluster.DBClusterArn
-          DbSecret: !Ref 'DBSecret'
-          DbClusterEndpoint: !GetAtt RDSCluster.Endpoint.Address
+#          DbCluster: !GetAtt RDSCluster.DBClusterArn
+#          DbSecret: !Ref 'DBSecret'
+#          DbClusterEndpoint: !GetAtt RDSCluster.Endpoint.Address
       CodeUri: src/lambdas
       Handler: user_delete.lambda_handler
       Runtime: python3.9
@@ -257,9 +261,9 @@ Resources:
       Environment:
         Variables:
           DbName: !Ref DbName
-          DbCluster: !GetAtt RDSCluster.DBClusterArn
-          DbSecret: !Ref 'DBSecret'
-          DbClusterEndpoint: !GetAtt RDSCluster.Endpoint.Address
+#          DbCluster: !GetAtt RDSCluster.DBClusterArn
+#          DbSecret: !Ref 'DBSecret'
+#          DbClusterEndpoint: !GetAtt RDSCluster.Endpoint.Address
       CodeUri: src/lambdas
       Handler: role_delete.lambda_handler
       Runtime: python3.9
@@ -289,9 +293,9 @@ Resources:
       Environment:
         Variables:
           DbName: !Ref DbName
-          DbCluster: !GetAtt RDSCluster.DBClusterArn
-          DbSecret: !Ref 'DBSecret'
-          DbClusterEndpoint: !GetAtt RDSCluster.Endpoint.Address
+#          DbCluster: !GetAtt RDSCluster.DBClusterArn
+#          DbSecret: !Ref 'DBSecret'
+#          DbClusterEndpoint: !GetAtt RDSCluster.Endpoint.Address
       CodeUri: src/lambdas
       Handler: user_change_password.lambda_handler
       Runtime: python3.9
@@ -380,8 +384,8 @@ Resources:
       Environment:
         Variables:
           DbName: !Ref DbName
-          DbCluster: !GetAtt RDSCluster.DBClusterArn
-          DbSecret: !Ref 'DBSecret'
+#          DbCluster: !GetAtt RDSCluster.DBClusterArn
+#          DbSecret: !Ref 'DBSecret'
       CodeUri: src/lambdas/
       Handler: api_create.lambda_handler
       Runtime: python3.9
@@ -408,8 +412,8 @@ Resources:
       Environment:
         Variables:
           DbName: !Ref DbName
-          DbCluster: !GetAtt RDSCluster.DBClusterArn
-          DbSecret: !Ref 'DBSecret'
+#          DbCluster: !GetAtt RDSCluster.DBClusterArn
+#          DbSecret: !Ref 'DBSecret'
       CodeUri: src/lambdas/
       Handler: module_create.lambda_handler
       Runtime: python3.9
@@ -436,8 +440,8 @@ Resources:
       Environment:
         Variables:
           DbName: !Ref DbName
-          DbCluster: !GetAtt RDSCluster.DBClusterArn
-          DbSecret: !Ref 'DBSecret'
+#          DbCluster: !GetAtt RDSCluster.DBClusterArn
+#          DbSecret: !Ref 'DBSecret'
       CodeUri: src/lambdas/
       Handler: feature_create.lambda_handler
       Runtime: python3.9
@@ -464,8 +468,8 @@ Resources:
       Environment:
         Variables:
           DbName: !Ref DbName
-          DbCluster: !GetAtt RDSCluster.DBClusterArn
-          DbSecret: !Ref 'DBSecret'
+#          DbCluster: !GetAtt RDSCluster.DBClusterArn
+#          DbSecret: !Ref 'DBSecret'
       CodeUri: src/lambdas/
       Handler: role_assign.lambda_handler
       Runtime: python3.9
@@ -495,8 +499,8 @@ Resources:
       Environment:
         Variables:
           DbName: !Ref DbName
-          DbCluster: !GetAtt RDSCluster.DBClusterArn
-          DbSecret: !Ref 'DBSecret'
+#          DbCluster: !GetAtt RDSCluster.DBClusterArn
+#          DbSecret: !Ref 'DBSecret'
       CodeUri: src/lambdas/
       Handler: api_assign.lambda_handler
       Runtime: python3.9
@@ -527,8 +531,8 @@ Resources:
       Environment:
         Variables:
           DbName: !Ref DbName
-          DbCluster: !GetAtt RDSCluster.DBClusterArn
-          DbSecret: !Ref 'DBSecret'
+#          DbCluster: !GetAtt RDSCluster.DBClusterArn
+#          DbSecret: !Ref 'DBSecret'
       CodeUri: src/lambdas
       Handler: user_authorization.lambda_handler
       Runtime: python3.9
@@ -559,6 +563,89 @@ Resources:
       ClientName: !Sub ${Stage}-UserPoolClient
       ExplicitAuthFlows:
         - USER_PASSWORD_AUTH
+  IdentityPool:
+    Type: AWS::Cognito::IdentityPool
+    Properties:
+      IdentityPoolName: !Ref IdentityPoolName
+      AllowUnauthenticatedIdentities: true
+      CognitoIdentityProviders:
+        - ClientId: !Ref UserPoolClient
+          ProviderName: !GetAtt UserPool.ProviderName
+  IdentityPoolRoleMapping:
+    Type: AWS::Cognito::IdentityPoolRoleAttachment
+    Properties:
+      IdentityPoolId: !Ref IdentityPool
+      RoleMappings:
+        CognitoProvider:
+          IdentityProvider: !Sub "cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}:${UserPoolClient}"
+          # IdentityProvider: !Join ["", ["cognito-idp.", !Ref "AWS::Region", ".amazonaws.com" , "/", !Ref UserPool, ":", !Ref UserPoolClient],]
+          AmbiguousRoleResolution: AuthenticatedRole  # AuthenticatedRole, Deny
+          Type: Token # Token, Rules
+      Roles:
+        authenticated: !GetAtt CognitoAuthenticatedRole.Arn
+        unauthenticated: !GetAtt CognitoUnAuthenticatedRole.Arn
+
+  CognitoAuthenticatedRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Federated: "cognito-identity.amazonaws.com"
+            Action:
+              - "sts:AssumeRoleWithWebIdentity"
+            Condition:
+              StringEquals:
+                "cognito-identity.amazonaws.com:aud": !Ref IdentityPool
+              "ForAnyValue:StringLike":
+                "cognito-identity.amazonaws.com:amr": authenticated
+      Policies:
+        - PolicyName: !Sub "${IdentityPoolName}_authenticated_policy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "mobileanalytics:PutEvents"
+                  - "cognito-sync:*"
+                  - "cognito-identity:*"
+                  - "s3:*"
+                Resource: "*"
+              - Effect: "Allow"
+                Action:
+                  - "lambda:InvokeFunction"
+                  - "chime:*"
+                  - "cognito-idp:*"
+                Resource: "*"
+  CognitoUnAuthenticatedRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Federated: "cognito-identity.amazonaws.com"
+            Action:
+              - "sts:AssumeRoleWithWebIdentity"
+            Condition:
+              StringEquals:
+                "cognito-identity.amazonaws.com:aud": !Ref IdentityPool
+              "ForAnyValue:StringLike":
+                "cognito-identity.amazonaws.com:amr": unauthenticated
+      Policies:
+        - PolicyName: !Sub "${IdentityPoolName}_unauthenticated_policy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "mobileanalytics:PutEvents"
+                  - "cognito-sync:*"
+                  - "s3:*"
+                Resource: "*"
 
   #Custom API with Custom Authorizer
   MyCustomApi:
@@ -600,104 +687,104 @@ Resources:
           Projection:
             ProjectionType: ALL
 
-  VPC:
-    Type: "AWS::EC2::VPC"
-    Properties:
-      CidrBlock: "10.0.0.0/16"
-      Tags:
-      - Key: "Name"
-        Value: !Ref "Tag"
-  SubnetA:
-    Type: "AWS::EC2::Subnet"
-    Properties:
-      AvailabilityZone: !Select
-        - 0
-        - !GetAZs
-          Ref: 'AWS::Region'
-      VpcId: !Ref "VPC"
-      CidrBlock: "10.0.0.0/24"
-
-  SubnetB:
-    Type: "AWS::EC2::Subnet"
-    Properties:
-      AvailabilityZone: !Select
-        - 1
-        - !GetAZs
-          Ref: 'AWS::Region'
-      VpcId: !Ref "VPC"
-      CidrBlock: "10.0.1.0/24"
-
-  RouteTable:
-    Type: "AWS::EC2::RouteTable"
-    Properties:
-      VpcId: !Ref "VPC"
-
-  SubnetGroup:
-    Type: "AWS::RDS::DBSubnetGroup"
-    Properties:
-      DBSubnetGroupName: "subnetgroup"
-      DBSubnetGroupDescription: "Subnet Group"
-      SubnetIds:
-        - !Ref "SubnetA"
-        - !Ref "SubnetB"
-
-  InstanceSecurityGroup:
-    Type: "AWS::EC2::SecurityGroup"
-    Properties:
-      GroupName: "Example Security Group"
-      GroupDescription: "RDS traffic"
-      VpcId: !Ref "VPC"
-      SecurityGroupEgress:
-      - IpProtocol: "-1"
-        CidrIp: "0.0.0.0/0"
-
-  InstanceSecurityGroupIngress:
-    Type: "AWS::EC2::SecurityGroupIngress"
-    DependsOn: "InstanceSecurityGroup"
-    Properties:
-      GroupId: !Ref "InstanceSecurityGroup"
-      IpProtocol: "tcp"
-      FromPort: "0"
-      ToPort: "65535"
-      SourceSecurityGroupId: !Ref "InstanceSecurityGroup"
-
-  RDSCluster:
-    Type: "AWS::RDS::DBCluster"
-    Properties:
-      EnableHttpEndpoint: true
-      DBSubnetGroupName: !Ref "SubnetGroup"
-      MasterUsername: !Join [ '', [ '{{resolve:secretsmanager:', !Ref DBSecret, ':SecretString:username}}' ] ]
-      MasterUserPassword: !Join [ '', [ '{{resolve:secretsmanager:', !Ref DBSecret, ':SecretString:password}}' ] ]
-      DatabaseName: "usermodule"
-      Engine: "aurora"
-      EngineMode: "serverless"
-      VpcSecurityGroupIds:
-      - !Ref "InstanceSecurityGroup"
-      ScalingConfiguration:
-        AutoPause: false
-        MaxCapacity: 16
-        MinCapacity: 2
-        SecondsUntilAutoPause: 300
-  DBSecret:
-    Type: AWS::SecretsManager::Secret
-    Properties:
-      Description: Username and password for database
-      GenerateSecretString:
-        GenerateStringKey: "password"
-        PasswordLength: 20
-        SecretStringTemplate: '{"username": "mahadi"}'
-        ExcludePunctuation: True
-      Tags:
-        - Key: Name
-          Value: db-secret
-      Name: DBSecret
-
-  DBSecretAttachment:
-    Type: AWS::SecretsManager::SecretTargetAttachment
-    Properties:
-      SecretId: !Ref DBSecret
-      TargetId: !Ref RDSCluster
-      TargetType: AWS::RDS::DBCluster
+#  VPC:
+#    Type: "AWS::EC2::VPC"
+#    Properties:
+#      CidrBlock: "10.0.0.0/16"
+#      Tags:
+#      - Key: "Name"
+#        Value: !Ref "Tag"
+#  SubnetA:
+#    Type: "AWS::EC2::Subnet"
+#    Properties:
+#      AvailabilityZone: !Select
+#        - 0
+#        - !GetAZs
+#          Ref: 'AWS::Region'
+#      VpcId: !Ref "VPC"
+#      CidrBlock: "10.0.0.0/24"
+#
+#  SubnetB:
+#    Type: "AWS::EC2::Subnet"
+#    Properties:
+#      AvailabilityZone: !Select
+#        - 1
+#        - !GetAZs
+#          Ref: 'AWS::Region'
+#      VpcId: !Ref "VPC"
+#      CidrBlock: "10.0.1.0/24"
+#
+#  RouteTable:
+#    Type: "AWS::EC2::RouteTable"
+#    Properties:
+#      VpcId: !Ref "VPC"
+#
+#  SubnetGroup:
+#    Type: "AWS::RDS::DBSubnetGroup"
+#    Properties:
+#      DBSubnetGroupName: "subnetgroup"
+#      DBSubnetGroupDescription: "Subnet Group"
+#      SubnetIds:
+#        - !Ref "SubnetA"
+#        - !Ref "SubnetB"
+#
+#  InstanceSecurityGroup:
+#    Type: "AWS::EC2::SecurityGroup"
+#    Properties:
+#      GroupName: "Example Security Group"
+#      GroupDescription: "RDS traffic"
+#      VpcId: !Ref "VPC"
+#      SecurityGroupEgress:
+#      - IpProtocol: "-1"
+#        CidrIp: "0.0.0.0/0"
+#
+#  InstanceSecurityGroupIngress:
+#    Type: "AWS::EC2::SecurityGroupIngress"
+#    DependsOn: "InstanceSecurityGroup"
+#    Properties:
+#      GroupId: !Ref "InstanceSecurityGroup"
+#      IpProtocol: "tcp"
+#      FromPort: "0"
+#      ToPort: "65535"
+#      SourceSecurityGroupId: !Ref "InstanceSecurityGroup"
+#
+#  RDSCluster:
+#    Type: "AWS::RDS::DBCluster"
+#    Properties:
+#      EnableHttpEndpoint: true
+#      DBSubnetGroupName: !Ref "SubnetGroup"
+#      MasterUsername: !Join [ '', [ '{{resolve:secretsmanager:', !Ref DBSecret, ':SecretString:username}}' ] ]
+#      MasterUserPassword: !Join [ '', [ '{{resolve:secretsmanager:', !Ref DBSecret, ':SecretString:password}}' ] ]
+#      DatabaseName: "usermodule"
+#      Engine: "mysql"
+#      EngineMode: "provisioned"
+#      VpcSecurityGroupIds:
+#      - !Ref "InstanceSecurityGroup"
+#      ScalingConfiguration:
+#        AutoPause: false
+#        MaxCapacity: 16
+#        MinCapacity: 2
+#        SecondsUntilAutoPause: 300
+#  DBSecret:
+#    Type: AWS::SecretsManager::Secret
+#    Properties:
+#      Description: Username and password for database
+#      GenerateSecretString:
+#        GenerateStringKey: "password"
+#        PasswordLength: 20
+#        SecretStringTemplate: '{"username": "mahadi"}'
+#        ExcludePunctuation: True
+#      Tags:
+#        - Key: Name
+#          Value: db-secret
+#      Name: DBSecret
+#
+#  DBSecretAttachment:
+#    Type: AWS::SecretsManager::SecretTargetAttachment
+#    Properties:
+#      SecretId: !Ref DBSecret
+#      TargetId: !Ref RDSCluster
+#      TargetType: AWS::RDS::DBCluster
   MyLibLayer:
     Type: AWS::Serverless::LayerVersion
     Properties:
@@ -712,8 +799,8 @@ Resources:
     Properties:
       ServiceToken: !GetAtt MyCustomResourceFunction.Arn
       MethodArn: !Ref MyCustomResourceFunction
-#      ForceUpdate:
-#        Fn::Sub: "${AWS::StackId}-${AWS::Region}-${AWS::AccountId}-$(date +%s)"
+      ForceUpdate:
+        Fn::Sub: "${AWS::StackId}-${AWS::Region}-${AWS::AccountId}-$(date +%s)"
   MyCustomResourceFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -738,11 +825,15 @@ Resources:
       AccessControl: PublicRead
       CorsConfiguration:
         CorsRules:
+          - ExposeHeaders:
+              - ETag
+              - x-amz-meta-custom-header
           - AllowedHeaders:
               - "*"
             AllowedMethods:
               - GET
               - PUT
               - POST
+              - DELETE
             AllowedOrigins:
               - "*"
