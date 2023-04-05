@@ -8,12 +8,10 @@ import boto3
 from jose import jwk, jwt
 from jose.utils import base64url_decode
 from rds_data import execute_statement
+from global_utils import get_response, dict_connection
 
-dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table('pwsp_revenue_system')
 UserPoolClient = os.getenv('UserPoolClient')
 UserPool = os.getenv('UserPool')
-DynamoTableName = os.getenv('DynamoTableName')
 RegionName = os.getenv('RegionName')
 
 region = RegionName
@@ -89,16 +87,27 @@ def check_role_permission_rds(role, api):
         # Check that this role and path exists in role_api table or not
         # Check if the row exists
         sql_query = f'SELECT 1 FROM role_api WHERE roleName = \'{role}\' AND apiUrl = \'{api_path}\''
-        response = execute_statement(sql_query)
-        print("DB RESPONSE:::::::: ", response['records'])
-        # If the SELECT query returns any rows, then the row exists
-        row_exists = len(response['records']) > 0
-
-        # Return a response indicating whether the row exists or not
-        if row_exists:
-            return True
-        else:
+        # response = execute_statement(sql_query)
+        # print("DB RESPONSE:::::::: ", response['records'])
+        # # If the SELECT query returns any rows, then the row exists
+        # row_exists = len(response['records']) > 0
+        #
+        # # Return a response indicating whether the row exists or not
+        # if row_exists:
+        #     return True
+        # else:
+        #     return False
+        try:
+            with dict_connection.cursor() as cursor:
+                cursor.execute(sql_query)
+                result = cursor.fetchall()
+                print("Hey!!! This is the Result:::::::::::::::::::::", result)
+                return True
+        except Exception as e:
+            print("Exception from the RDS::::::::::  ", e)
             return False
+        finally:
+            dict_connection.commit()
     except Exception as e:
         print("Exception from the RDS::::::::::  ", e)
         return False

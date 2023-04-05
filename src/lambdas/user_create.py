@@ -7,18 +7,19 @@ from aws_lambda_powertools import Logger
 from botocore.exceptions import ClientError
 from rds_data import execute_statement
 from user_model import UserModel
-
+from global_utils import get_response, dict_connection, get_formatted_validation_error
 client = boto3.client('cognito-idp')
 
 UserPool = os.getenv('UserPool')
 
-DynamoTableName = os.getenv('DynamoTableName')
 RegionName = os.getenv('RegionName')
 
 logger = Logger(service="APP")
 
 
 def lambda_handler(message, context):
+    print(message)
+    shouldCommit = False
     if ('body' not in message or
             message['httpMethod'] != 'POST'):
         return {
@@ -30,7 +31,7 @@ def lambda_handler(message, context):
     try:
         user_post = UserModel(**payload)
     except Exception as e:
-        print("Exception to create user table::::::::::  ", e)
+        print("Exception to parse user data::::::::::  ", e)
         return {"statusCode": 400,
                 'body': json.dumps({"message": str(e)}),
                 # "location": ip.text.replace("\n", "")
@@ -44,22 +45,24 @@ def lambda_handler(message, context):
     address = user_post.address
     userType = user_post.userType
     email = user_post.email
-    phoneNumber = user_post.phoneNumber
+    phone_number = user_post.phoneNumber
     created_at = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     employeeId = "ABCDEFGHIJKLMN"
     isActive = True
-    # randomId = randint(1, 1000)
     emailExists = check_email_exists(email)
     if emailExists:
         return {"statusCode": 400,
                 'body': json.dumps({"message": "Email already exists in userpool"}),
                 }
 
-    insertSql = f"INSERT INTO user (name, mothersName, fathersName, dob, address, userType, email, employeeId, isActive, phoneNumber, createdAt) VALUES ('{name}', '{mothersName}','{fathersName}','{dob}','{address}','{userType}','{email}','{employeeId}', {isActive},'{phoneNumber}','{created_at}')"
+    insertSql = f"INSERT INTO user (name, mothersName, fathersName, dob, address, userType, email, employeeId, isActive, phoneNumber, createdAt) VALUES ('{name}', '{mothersName}','{fathersName}','{dob}','{address}','{userType}','{email}','{employeeId}', {isActive},'{phone_number}','{created_at}')"
     # response = {"records": {}}
     try:
-        res = execute_statement(insertSql)
-        userId = res['generatedFields'][0]['longValue']
+        with dict_connection.cursor() as cursor:
+            cursor.execute(insertSql)
+            inserted_id = cursor.lastrowid
+            user_post.id = inserted_id
+        shouldCommit = True
 
         """
            Create user forcefully confirm the user mail also and generate random password.
@@ -80,18 +83,25 @@ def lambda_handler(message, context):
             Permanent=True
         )
 
-        return {
-            "statusCode": 200,
-            "headers": {},
-            'body': json.dumps({'userId': userId}, indent=4, sort_keys=True, default=str),  # default=decimal_default),
-        }
+        return get_response(
+            status=200,
+            error=False,
+            message="News Created Successfully",
+            data=user_post.dict()
+        )
     except Exception as e:
+        shouldCommit = True
         print("Exception to insert in api table::::::::::  ", e)
         return {"statusCode": 400,
                 'body': json.dumps({"message": "Can't insert the data!!!!!!!!"}),
                 # "location": ip.text.replace("\n", "")
 
                 }
+    finally:
+        if shouldCommit:
+            dict_connection.commit()
+        else:
+            dict_connection.rollback()
 
 
 def check_email_exists(email):

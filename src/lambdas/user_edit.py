@@ -4,20 +4,19 @@ import os
 
 import boto3
 from aws_lambda_powertools import Logger
-from rds_data import execute_statement
 from user_model import UserEditModel
 
 client = boto3.client('cognito-idp')
 
 UserPool = os.getenv('UserPool')
-
-DynamoTableName = os.getenv('DynamoTableName')
 RegionName = os.getenv('RegionName')
 
 logger = Logger(service="APP")
+from global_utils import get_response, dict_connection
 
 
 def lambda_handler(message, context):
+    shouldCommit = False
     if ('body' not in message or
             message['httpMethod'] != 'POST'):
         return {
@@ -40,38 +39,38 @@ def lambda_handler(message, context):
                 }
     # Extract values from the payload
     name = user_post.name
-    mothersName = user_post.mothersName
-    fathersName = user_post.fathersName
+    mothers_name = user_post.mothersName
+    fathers_name = user_post.fathersName
     dob = user_post.dob
     address = user_post.address
     updated_at = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    userType = user_post.userType
-    userId = user_post.id
-    parameters = [
-        {'name': 'name', 'value': {'stringValue': name}},
-        {'name': 'mothersName', 'value': {'stringValue': mothersName}},
-        {'name': 'fathersName', 'value': {'stringValue': fathersName}},
-        {'name': 'dob', 'value': {'stringValue': dob}},
-        {'name': 'address', 'value': {'stringValue': address}},
-        {'name': 'userType', 'value': {'stringValue': userType}},
-        {'name': 'userId', 'value': {'longValue': userId}},
-        {'name': 'updatedAt', 'value': {'stringValue': updated_at}}
-    ]
+    user_type = user_post.userType
+    user_id = user_post.id
 
-    editSql = f"UPDATE user SET name = :name, mothersName = :mothersName, fathersName = :fathersName, dob = :dob, address = :address, updatedAt = :updatedAt, userType = :userType  WHERE id  = :userId;"
+    editSql = f"UPDATE user SET name = '{name}', mothersName ='{mothers_name}' , fathersName = '{fathers_name}', dob = '{dob}', address = '{address}', updatedAt = '{updated_at}', userType = '{user_type}'  WHERE id  = {user_id};"
     # response = {"records": {}}
     try:
-        execute_statement(editSql, parameters)
-        return {
-            "statusCode": 200,
-            "headers": {},
-            'body': json.dumps({"message": "Successfully Updated!"}, indent=4, sort_keys=True, default=str),
-            # default=decimal_default),
-        }
+        with dict_connection.cursor() as cursor:
+            cursor.execute(editSql)
+            inserted_id = cursor.lastrowid
+            user_post.id = inserted_id
+        shouldCommit = True
+        return get_response(
+            status=200,
+            error=False,
+            message="News Created Successfully",
+            data=user_post.dict()
+        )
     except Exception as e:
+        shouldCommit = True
         print("Exception to insert in api table::::::::::  ", e)
         return {"statusCode": 400,
-                'body': json.dumps({"message": "Can't insert the data!!!!!!!!"}),
+                'body': json.dumps({"message": "Can't update the data!!!!!!!!"}),
                 # "location": ip.text.replace("\n", "")
 
                 }
+    finally:
+        if shouldCommit:
+            dict_connection.commit()
+        else:
+            dict_connection.rollback()

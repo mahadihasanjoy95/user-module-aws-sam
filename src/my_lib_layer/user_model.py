@@ -1,10 +1,12 @@
 import re
 from datetime import datetime
+from typing import Optional
 
 from pydantic import BaseModel, validator, constr, EmailStr, conint
 
 
 class UserModel(BaseModel):
+    id: Optional[int]
     # userName: constr(max_length=20, min_length=5, regex=r"^[a-zA-Z0-9_-]{4,20}$")
     name: constr(min_length=2, max_length=255)
     mothersName: constr(min_length=2, max_length=255)
@@ -28,6 +30,7 @@ class UserModel(BaseModel):
         if not pattern.match(phoneNumber):
             raise ValueError('Invalid phone number')
         return phoneNumber
+
     @validator('password')
     def validate_password(cls, value):
         if len(value) < 8:
